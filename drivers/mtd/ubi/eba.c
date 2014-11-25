@@ -478,6 +478,7 @@ retry:
 						 pnum, vol_id, lnum);
 					err = -EBADMSG;
 				} else
+					err = -EINVAL;
 					ubi_ro_mode(ubi);
 			}
 			goto out_free;
