@@ -1,0 +1,11 @@
+config MTK_DEVAPC_DRIVER
+	bool "Enable MTK Device APC driver"
+	default n
+	help
+	  Device APC is a kernel driver controlling internal device security
+
+config MTK_DEBUGSYS_LOCK
+	bool "Lock the debugsys reg"
+	default n
+	help
+	  block debugsys to mitigate privilege escalation through debugsys.

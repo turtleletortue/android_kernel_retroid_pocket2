@@ -1,0 +1,16 @@
+#include <generated/autoconf.h>
+/dts-v1/;
+
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/plugin/;
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "mt6580-pinfunc.h"
+#include <dt-bindings/mmc/mt6580-msdc.h>
+#else
+#include "mt6580.dts"
+#endif
+
+#include <gbx2000v1/cust.dtsi>
+
+/*End of this file, DO NOT ADD ANYTHING HERE*/
