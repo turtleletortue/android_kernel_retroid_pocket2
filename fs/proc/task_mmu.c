@@ -569,7 +569,7 @@ static void smaps_pte_entry(pte_t *pte, unsigned long addr,
 #endif /* CONFIG_SWAP*/
 			mss->swap += PAGE_SIZE;
 #ifdef CONFIG_SWAP
-			entry = pte_to_swp_entry(ptent);
+			entry = pte_to_swp_entry(*pte);
 			if (non_swap_entry(entry))
 				return;
 			p = swap_info_get(entry);
