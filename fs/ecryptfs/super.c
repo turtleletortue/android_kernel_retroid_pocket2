@@ -187,5 +187,5 @@ const struct super_operations ecryptfs_sops = {
 	.statfs = ecryptfs_statfs,
 	.remount_fs = NULL,
 	.evict_inode = ecryptfs_evict_inode,
-	.show_options = ecryptfs_show_options
+	.show_options = NULL,//ecryptfs_show_options
 };

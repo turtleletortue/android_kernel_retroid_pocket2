@@ -1,0 +1,17 @@
+#
+# Touchscreen driver configuration
+#
+if TOUCHSCREEN_MTK_FT6X36
+    
+config FT6X36_PROXIMITY
+	bool "use touch panel to implement proximity sensor"
+	default y
+	help
+	Say Y here if you want to use touch panel to implement psensor.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+    
+endif

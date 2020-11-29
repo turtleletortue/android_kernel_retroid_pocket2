@@ -29,6 +29,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/of_gpio.h>
+#include <linux/of_irq.h>
 #include <linux/spinlock.h>
 
 struct gpio_button_data {
@@ -41,6 +42,7 @@ struct gpio_button_data {
 	spinlock_t lock;
 	bool disabled;
 	bool key_pressed;
+	int  butt;
 };
 
 struct gpio_keys_drvdata {
@@ -49,6 +51,15 @@ struct gpio_keys_drvdata {
 	struct mutex disable_lock;
 	struct gpio_button_data data[0];
 };
+
+struct button_record {
+	unsigned int pin;
+	int state;
+};
+
+static int *g_Buttons;
+
+static struct button_record *btns_record;
 
 /*
  * SYSFS interface for enabling/disabling keys and switches:
@@ -337,6 +348,40 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 		input_event(input, type, button->code, !!state);
 	}
 	input_sync(input);
+	
+	/* update buttons state record */
+	btns_record[button->code].state = !!state;
+	
+	if (bdata->butt >= 0 && state)
+	{
+		input_event(input, type, bdata->butt, 0);
+		input_sync(input);
+	}
+}
+
+static inline void check_buttons_record(struct input_dev *input, unsigned int code, unsigned int pin)
+{
+	extern int retroid_mt_get_gpio_in_base(unsigned int pin);
+
+	/* 有按键被按下才查询 */
+	if (btns_record[code].state) {
+		btns_record[code].state = !!retroid_mt_get_gpio_in_base(pin);
+		if (!btns_record[code].state) {
+			printk("gpio_keys.c: bug recreate, code: %d\n", code);
+			input_event(input, EV_KEY, code, btns_record[code].state);
+			input_sync(input);
+		}
+	}
+}
+
+static void gpio_dpad_keys_report_event(struct gpio_button_data *bdata)
+{
+	struct input_dev *input = bdata->input;
+
+	check_buttons_record(input, BTN_DPAD_UP, 11);
+	check_buttons_record(input, BTN_DPAD_DOWN, 12);
+	check_buttons_record(input, BTN_DPAD_LEFT, 73);
+	check_buttons_record(input, BTN_DPAD_RIGHT, 71);
 }
 
 static void gpio_keys_gpio_work_func(struct work_struct *work)
@@ -345,6 +390,8 @@ static void gpio_keys_gpio_work_func(struct work_struct *work)
 		container_of(work, struct gpio_button_data, work);
 
 	gpio_keys_gpio_report_event(bdata);
+
+	gpio_dpad_keys_report_event(bdata);
 
 	if (bdata->button->wakeup)
 		pm_relax(bdata->input->dev.parent);
@@ -461,10 +508,10 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 		}
 
 		if (button->debounce_interval) {
-			error = gpio_set_debounce(button->gpio,
-					button->debounce_interval * 1000);
+			//error = gpio_set_debounce(button->gpio,
+			//		button->debounce_interval * 1000);
 			/* use timer if gpiolib doesn't provide debounce */
-			if (error < 0)
+			//if (error < 0)
 				bdata->timer_debounce =
 						button->debounce_interval;
 		}
@@ -534,7 +581,7 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 			bdata->irq, error);
 		return error;
 	}
-
+	
 	return 0;
 }
 
@@ -589,12 +636,13 @@ static void gpio_keys_close(struct input_dev *input)
 static struct gpio_keys_platform_data *
 gpio_keys_get_devtree_pdata(struct device *dev)
 {
-	struct device_node *node, *pp;
+	struct device_node *node, *pp, *eint;
 	struct gpio_keys_platform_data *pdata;
 	struct gpio_keys_button *button;
+	const __be32 *parp;
 	int error;
 	int nbuttons;
-	int i;
+	int i, *Buttons;
 
 	node = dev->of_node;
 	if (!node)
@@ -609,6 +657,20 @@ gpio_keys_get_devtree_pdata(struct device *dev)
 			     GFP_KERNEL);
 	if (!pdata)
 		return ERR_PTR(-ENOMEM);
+	
+	g_Buttons = devm_kzalloc(dev,
+			     nbuttons * sizeof(int),
+				 GFP_KERNEL);
+	
+	btns_record = devm_kzalloc(dev,
+			     nbuttons * sizeof(struct button_record),
+				 GFP_KERNEL);
+	memset(btns_record, 0, nbuttons * sizeof(struct button_record));
+				 
+	if (!g_Buttons)
+		return ERR_PTR(-ENOMEM);
+	
+	Buttons = g_Buttons;
 
 	pdata->buttons = (struct gpio_keys_button *)(pdata + 1);
 	pdata->nbuttons = nbuttons;
@@ -647,6 +709,8 @@ gpio_keys_get_devtree_pdata(struct device *dev)
 			return ERR_PTR(-EINVAL);
 		}
 
+		//btns_record[button->code].pin = (unsigned int)button->gpio - 0x3a3;
+
 		button->desc = of_get_property(pp, "label", NULL);
 
 		if (of_property_read_u32(pp, "linux,input-type", &button->type))
@@ -657,6 +721,15 @@ gpio_keys_get_devtree_pdata(struct device *dev)
 		if (of_property_read_u32(pp, "debounce-interval",
 					 &button->debounce_interval))
 			button->debounce_interval = 5;
+			
+		parp = of_get_property(pp, "eint", NULL);
+		
+		eint = of_find_node_by_phandle(be32_to_cpup(parp));
+		
+		irq_of_parse_and_map(eint, 0);
+		
+		if (of_property_read_u32(pp, "button", &Buttons[i - 1]))
+			Buttons[i - 1] = -1;
 	}
 
 	if (pdata->nbuttons == 0)
@@ -725,8 +798,8 @@ static int gpio_keys_probe(struct platform_device *pdev)
 	input->close = gpio_keys_close;
 
 	input->id.bustype = BUS_HOST;
-	input->id.vendor = 0x0001;
-	input->id.product = 0x0001;
+	input->id.vendor  = 0x9874;
+	input->id.product = 0x6541;
 	input->id.version = 0x0100;
 
 	/* Enable auto repeat feature of Linux input subsystem */
@@ -743,6 +816,8 @@ static int gpio_keys_probe(struct platform_device *pdev)
 
 		if (button->wakeup)
 			wakeup = 1;
+		
+		bdata->butt = g_Buttons[i];
 	}
 
 	error = sysfs_create_group(&pdev->dev.kobj, &gpio_keys_attr_group);

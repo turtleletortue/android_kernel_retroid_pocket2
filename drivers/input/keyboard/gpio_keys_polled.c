@@ -248,8 +248,8 @@ static int gpio_keys_polled_probe(struct platform_device *pdev)
 	input->phys = DRV_NAME"/input0";
 
 	input->id.bustype = BUS_HOST;
-	input->id.vendor = 0x0001;
-	input->id.product = 0x0001;
+	input->id.vendor  = 0xDE15;
+	input->id.product = 0xDE15;
 	input->id.version = 0x0100;
 
 	__set_bit(EV_KEY, input->evbit);

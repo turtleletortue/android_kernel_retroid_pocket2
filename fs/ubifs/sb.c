@@ -58,7 +58,9 @@
 #define DEFAULT_RP_PERCENT 5
 
 /* The default maximum size of reserved pool in bytes */
-#define DEFAULT_MAX_RP_SIZE (5*1024*1024)
+#define DEFAULT_MAX_RP_SIZE (16*1024*1024)
+
+#define UBIFS_ONE_GIGA (1024*1024*1024)
 
 /* Default time granularity in nanoseconds */
 #define DEFAULT_TIME_GRAN 1000000000
@@ -182,16 +184,26 @@ static int create_default_filesystem(struct ubifs_info *c)
 	sup->time_gran     = cpu_to_le32(DEFAULT_TIME_GRAN);
 	if (c->mount_opts.override_compr)
 		sup->default_compr = cpu_to_le16(c->mount_opts.compr_type);
-	else
+	else {
+#if defined(CONFIG_UBIFS_FS_LZ4K)
+		sup->default_compr = cpu_to_le16(UBIFS_COMPR_LZ4K);
+#else
 		sup->default_compr = cpu_to_le16(UBIFS_COMPR_LZO);
+#endif
+	}
 
 	generate_random_uuid(sup->uuid);
 
 	main_bytes = (long long)main_lebs * c->leb_size;
-	tmp64 = div_u64(main_bytes * DEFAULT_RP_PERCENT, 100);
-	if (tmp64 > DEFAULT_MAX_RP_SIZE)
+
+	/*If the size of a volume is bigger than 1G, set rp_size to DEFAULT_MAX_RP_SIZE(16M).*/
+	if (main_bytes >= UBIFS_ONE_GIGA)
 		tmp64 = DEFAULT_MAX_RP_SIZE;
+	else
+		tmp64 = 0;
+
 	sup->rp_size = cpu_to_le64(tmp64);
+	sup->rp_uid = 10010; /*VID_CCCI*/
 	sup->ro_compat_version = cpu_to_le32(UBIFS_RO_COMPAT_VERSION);
 
 	err = ubifs_write_node(c, sup, UBIFS_SB_NODE_SZ, 0, 0);
@@ -680,11 +692,23 @@ static int fixup_leb(struct ubifs_info *c, int lnum, int len)
 	}
 
 	dbg_mnt("fixup LEB %d, data len %d", lnum, len);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	err = ubifs_leb_read(c, lnum, c->sbuf, 0, len, 1);
 	if (err)
 		return err;
 
-	return ubifs_leb_change(c, lnum, c->sbuf, len);
+	err = ubifs_leb_change(c, lnum, c->sbuf, len);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
+	return err;
 }
 
 /**
