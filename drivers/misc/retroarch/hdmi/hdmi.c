@@ -18,6 +18,7 @@
 
 extern int  backlight_brightness_set(int level);
 extern void speaker_power(int state);
+int get_hdmi_state(void);
 
 struct hdmi_data {
 	int init;
@@ -79,6 +80,12 @@ static ssize_t sysfs_set_lcd(struct device *dev, struct device_attribute *attr, 
 	int ret;
 	unsigned int value = 0;
 	ret = kstrtouint(buf, 0, &value);
+	if(get_hdmi_state()){
+		if(value == 0)
+			backlight_brightness_set(0);
+		else
+			backlight_brightness_set(500);
+	}
 	lcd_on = value;
 	printk("[hdmi] sysfs_set_lcd:%d\n",value);
 	return size;
