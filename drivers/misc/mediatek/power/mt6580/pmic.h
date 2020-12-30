@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #ifndef _PMIC_SW_H_
 #define _PMIC_SW_H_
 
@@ -30,11 +17,8 @@
 #define PMICDEB(fmt, arg...)     pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
 #define PMICFUC(fmt, arg...)     pr_debug(PMICTAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
 #endif
+#define PMICLOG(fmt, arg...)     pr_debug(PMICTAG fmt, ##arg)
 #define PMICREG(fmt, arg...)     pr_debug(PMICTAG fmt, ##arg)
-
-#define PMICLOG(fmt, arg...)     pr_err(PMICTAG fmt, ##arg)
-/* add below define to enable more log */
-#define PMICLOG_DBG(fmt, arg...) pr_err(PMICTAG fmt, ##arg)
 
 #define PMIC_EN REGULATOR_CHANGE_STATUS
 #define PMIC_VOL REGULATOR_CHANGE_VOLTAGE

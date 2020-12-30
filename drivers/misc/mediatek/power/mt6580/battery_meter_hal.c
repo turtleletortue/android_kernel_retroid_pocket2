@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include <linux/delay.h>
 #include <asm/div64.h>
 #include <linux/delay.h>
@@ -203,13 +190,13 @@ int get_hw_ocv(void)
 #if defined(SWCHR_POWER_PATH)
 	adc_result_reg = pmic_get_register_value(PMIC_RG_ADC_OUT_WAKEUP_SWCHR);
 	adc_result = (adc_result_reg * r_val_temp * VOLTAGE_FULL_RANGE) / ADC_PRECISE;
-	bm_err("[oam] get_hw_ocv (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL));
+	bm_print(BM_LOG_CRTI, "[oam] get_hw_ocv (swchr) : adc_result_reg=%d, adc_result=%d\n",
+		 adc_result_reg, adc_result);
 #else
 	adc_result_reg = pmic_get_register_value(PMIC_RG_ADC_OUT_WAKEUP_PCHR);
 	adc_result = (adc_result_reg * r_val_temp * VOLTAGE_FULL_RANGE) / ADC_PRECISE;
-	bm_err("[oam] get_hw_ocv (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL));
+	bm_print(BM_LOG_CRTI, "[oam] get_hw_ocv (pchr) : adc_result_reg=%d, adc_result=%d\n",
+		 adc_result_reg, adc_result);
 #endif
 
 	adc_result += g_hw_ocv_tune_value;

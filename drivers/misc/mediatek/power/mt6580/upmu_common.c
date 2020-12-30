@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include <linux/kernel.h>
 /* #include <linux/xlog.h> TBD */
 #include <linux/module.h>
@@ -2923,19 +2910,17 @@ unsigned short mt6350_get_register_value(PMU_FLAGS_LIST_ENUM flagname)
 	return val;
 }
 
-unsigned short pmic_set_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname, unsigned int val)
+unsigned short mt6350_get_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[flagname];
-	unsigned int ret = 0;
+	unsigned int val;
+	unsigned int ret;
 
-	if (pFlag->flagname != flagname) {
-		pr_info("[pmu_set_register_value]pmic flag idx error\n");
-		return 1;
-	}
-	ret = pmic_config_interface_nolock((pFlag->offset), (unsigned int) (val),
-		(unsigned int) (pFlag->mask), (unsigned int) (pFlag->shift));
+	ret =
+	    pmic_read_interface_nolock((unsigned int) pFlag->offset, &val, (unsigned int) (pFlag->mask),
+				(unsigned int) (pFlag->shift));
 
-	return 0;
+	return val;
 }
 
 unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int val)
@@ -2946,6 +2931,11 @@ unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned in
 unsigned short pmic_get_register_value(PMU_FLAGS_LIST_ENUM flagname)
 {
 	return mt6350_get_register_value(flagname);
+}
+
+unsigned short pmic_get_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname)
+{
+	return mt6350_get_register_value_nolock(flagname);
 }
 
 unsigned short bc11_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int val)

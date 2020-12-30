@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include "fan5405.h"
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
@@ -69,6 +56,7 @@ static struct i2c_driver fan5405_driver = {
 u8 fan5405_reg[fan5405_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(fan5405_i2c_access);
+
 
 int fan5405_read_byte(u8 cmd, u8 *returnData)
 {
@@ -481,12 +469,25 @@ void fan5405_dump_register(void)
 
 static int fan5405_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+    int err=0; 
+
+    battery_log(BAT_LOG_CRTI,"[fan5405_driver_probe] \n");
+
+    if (!(new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL))) {
+        err = -ENOMEM;
+        goto exit;
+    }    
+    memset(new_client, 0, sizeof(struct i2c_client));
+
+	
 	new_client = client;
 
 	fan5405_dump_register();
 	chargin_hw_init_done = KAL_TRUE;
 
 	return 0;
+exit:
+    return err;
 }
 
 u8 g_reg_value_fan5405 = 0;
@@ -560,9 +561,13 @@ static struct platform_driver fan5405_user_space_driver = {
 	},
 };
 
+static struct i2c_board_info __initdata i2c_fan5405 = { I2C_BOARD_INFO("fan5405", (fan5405_SLAVE_ADDR_WRITE>>1))};
 static int __init fan5405_init(void)
 {
 	int ret = 0;
+    battery_log(BAT_LOG_CRTI,"[fan5405_init] init start\n");
+    
+    i2c_register_board_info(FAN5405_BUSNUM, &i2c_fan5405, 1);
 
 	if (i2c_add_driver(&fan5405_driver) != 0) {
 		battery_log(BAT_LOG_CRTI,

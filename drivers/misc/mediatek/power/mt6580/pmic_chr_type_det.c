@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include <generated/autoconf.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -50,7 +37,7 @@
 /* #include <mach/mtk_rtc.h> TBD */
 #include <mach/mt_spm_mtcmos.h>
 
-/* #include <mach/battery_common.h> TBD */
+#include <mt-plat/battery_common.h>
 #include <linux/time.h>
 
 /*
@@ -82,6 +69,16 @@ static void hw_bc11_dump_register(void)
 static void hw_bc11_init(void)
 {
 	msleep(200);
+
+	/* add make sure USB Ready */
+	if (is_usb_rdy() == KAL_FALSE) {
+		battery_log(BAT_LOG_CRTI, "CDP, block\n");
+		while(is_usb_rdy() == KAL_FALSE)
+			msleep(100);
+		battery_log(BAT_LOG_CRTI, "CDP, free\n");
+	} else
+		battery_log(BAT_LOG_CRTI, "CDP, PASS\n");
+
 	Charger_Detect_Init();
 
 	/* RG_bc11_BIAS_EN=1 */
@@ -218,24 +215,36 @@ static unsigned int hw_bc11_stepB2(void)
 {
 	unsigned int wChargerAvail = 0;
 
-	/*enable the voltage source to DM*/
-	bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x1);
-	/* enable the pull-down current to DP */
-	bc11_set_register_value(PMIC_RG_BC11_IPD_EN, 0x2);
-	/* VREF threshold voltage for comparator  =0.325V */
-	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x0);
-	/* enable the comparator to DP */
-	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x2);
+	/* RG_bc11_IPU_EN[1:0]=10 */
+	bc11_set_register_value(PMIC_RG_BC11_IPU_EN, 0x2);
+	/* RG_bc11_VREF_VTH = [1:0]=01 */
+	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x1);
+	/* RG_bc11_CMP_EN[1.0] = 01 */
+	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x1);
+
 	msleep(80);
+	/* mdelay(80); */
+
 	wChargerAvail = bc11_get_register_value(PMIC_RGS_BC11_CMP_OUT);
+
+	if (Enable_BATDRV_LOG == BAT_LOG_FULL) {
+		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepB2() \r\n");
+		hw_bc11_dump_register();
+	}
+
+
 	if (!wChargerAvail) {
 		/* RG_bc11_VSRC_EN[1.0] = 10 */
+		/* mt6325_upmu_set_rg_bc11_vsrc_en(0x2); */
 		bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x2);
 	}
-	/*reset to default value*/
-	bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x0);
-	bc11_set_register_value(PMIC_RG_BC11_IPD_EN, 0x0);
+	/* RG_bc11_IPU_EN[1.0] = 00 */
+	bc11_set_register_value(PMIC_RG_BC11_IPU_EN, 0x0);
+	/* RG_bc11_CMP_EN[1.0] = 00 */
 	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x0);
+	/* RG_bc11_VREF_VTH = [1:0]=00 */
+	bc11_set_register_value(PMIC_RG_BC11_VREF_VTH, 0x0);
+
 
 	return wChargerAvail;
 }

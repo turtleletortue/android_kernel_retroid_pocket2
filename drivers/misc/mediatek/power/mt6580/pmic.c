@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 /*****************************************************************************
  *
  * Filename:
@@ -76,8 +63,6 @@
 #include <linux/time.h>
 #include <linux/wakelock.h>
 #include <linux/writeback.h>
-#include <linux/notifier.h>
-#include <linux/fb.h>
 /* #include <linux/xlog.h> TBD */
 
 /* mach */
@@ -107,8 +92,8 @@
 #endif
 /* #include <mach/upmu_common.h> */
 #include <mt-plat/upmu_common.h>
-#include "pmic.h"
-#include "pmic_dvt.h"
+#include <pmic.h>
+#include <pmic_dvt.h>
 
 /*
  * PMIC extern variable
@@ -145,17 +130,21 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 #define CONFIG_PMIC_HW_ACCESS_EN
 #endif
 
+#define PMICLOG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+/* #define PMICLOG(fmt, arg...) do{}while(0) */
 
 static DEFINE_MUTEX(pmic_access_mutex);
 
 unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
-					unsigned int SHIFT)
+				 unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
 	unsigned int rdata = 0xFFFF;
+
+	mutex_lock(&pmic_access_mutex);
 
 	/* mt_read_byte(RegNum, &pmic_reg); */
 #if defined(CONFIG_MTK_PMIC_WRAP)
@@ -164,6 +153,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
 	/* PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -172,6 +162,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	*val = (pmic_reg >> SHIFT);
 	/* PMICLOG"[pmic_read_interface] val=0x%x\n", *val); */
 
+	mutex_unlock(&pmic_access_mutex);
 #else
 	/* PMICLOG("[pmic_read_interface] Can not access HW PMIC\n"); */
 #endif
@@ -180,7 +171,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 }
 
 unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK,
-					unsigned int SHIFT)
+				   unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
@@ -196,7 +187,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 #endif
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		//PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -210,7 +201,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 #endif
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap write data fail\n", RegNum);
+		//PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -240,7 +231,32 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK,
 					unsigned int SHIFT)
 {
-	return pmic_read_interface(RegNum, val, MASK, SHIFT);
+	unsigned int return_value = 0;
+
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
+	unsigned int pmic_reg = 0;
+	unsigned int rdata = 0xFFFF;
+
+	/*mt_read_byte(RegNum, &pmic_reg); */
+#if defined(CONFIG_MTK_PMIC_WRAP)
+	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
+#endif
+	pmic_reg = rdata;
+	if (return_value != 0) {
+		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		return return_value;
+	}
+	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+
+	pmic_reg &= (MASK << SHIFT);
+	*val = (pmic_reg >> SHIFT);
+	/*PMICLOG"[pmic_read_interface] val=0x%x\n", *val); */
+
+#else
+	/*PMICLOG("[pmic_read_interface] Can not access HW PMIC\n"); */
+#endif
+
+	return return_value;
 }
 
 unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK,
@@ -261,6 +277,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -274,6 +291,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 #endif
 	if (return_value != 0) {
 		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -336,7 +354,7 @@ void upmu_set_reg_value(unsigned int reg, unsigned int reg_val)
   *********************************************************/
 void mt6350_dump_register(void)
 {
-	unsigned int i = 0;
+	unsigned char i = 0;
 
 	PMICLOG("dump PMIC 6350 register\n");
 
@@ -361,7 +379,7 @@ void mt6350_dump_register(void)
  */
 void upmu_interrupt_chrdet_int_en(unsigned int val)
 {
-	PMICLOG_DBG("[upmu_interrupt_chrdet_int_en] val=%d.\r\n", val);
+	PMICLOG("[upmu_interrupt_chrdet_int_en] val=%d.\r\n", val);
 
 	pmic_set_register_value(PMIC_RG_INT_EN_CHRDET, val);
 }
@@ -375,7 +393,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 	unsigned int val = 0;
 
 	val = pmic_get_register_value(PMIC_RGS_CHRDET);
-	PMICLOG_DBG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
+	PMICLOG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
 
 	return val;
 }
@@ -391,44 +409,35 @@ static ssize_t show_pmic_access(struct device *dev, struct device_attribute *att
 }
 
 static ssize_t store_pmic_access(struct device *dev, struct device_attribute *attr, const char *buf,
-		size_t size)
+				 size_t size)
 {
-
 	int ret = 0;
-	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	pr_err("[store_pmic_access]\n");
+	PMICLOG("[store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_err("[store_pmic_access] buf is %s\n", buf);
-		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
-
-		pvalue = (char *)buf;
-		if (size > 5) {
-			addr = strsep(&pvalue, " ");
-			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+		PMICLOG("[store_pmic_access] buf is %s\n", buf);
+		/*reg_address = simple_strtoul(buf, &pvalue, 16); */
+		ret = kstrtoul(buf, 16, (unsigned long *)&reg_address);
 
 		if (size > 5) {
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*pvalue = (char *)buf + 1;*/
-			val =  strsep(&pvalue, " ");
-			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16); */
+			buf = buf + 1;
+			ret = kstrtoul(buf, 16, (unsigned long *)&reg_value);
 
-			pr_err("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
-					reg_address, reg_value);
+			PMICLOG("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
+				reg_address, reg_value);
 			ret = pmic_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
 		} else {
 			ret = pmic_read_interface(reg_address, &g_reg_value, 0xFFFF, 0x0);
-			pr_err("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
-					reg_address, g_reg_value);
-			pr_err("[store_pmic_access] use \"cat pmic_access\" to get value(decimal)\r\n");
+			PMICLOG("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
+				reg_address, g_reg_value);
+			PMICLOG
+			    ("[store_pmic_access] Please use \"cat pmic_access\" to get value\r\n");
 		}
 	}
 	return size;
-
 }
 
 static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);	/* 664 */
@@ -476,8 +485,6 @@ static DEVICE_ATTR(pmic_dvt, 0664, show_pmic_dvt, store_pmic_dvt);
  */
 /*extern PMU_FLAG_TABLE_ENTRY pmu_flags_table[];*/
 
-#define regulator_log 0
-
 static int mtk_regulator_enable(struct regulator_dev *rdev)
 {
 	const struct regulator_desc *rdesc = rdev->desc;
@@ -489,14 +496,11 @@ static int mtk_regulator_enable(struct regulator_dev *rdev)
 		pmic_set_register_value(mreg->en_reg, 1);
 		add = pmu_flags_table[mreg->en_reg].offset;
 		val = upmu_get_reg_value(pmu_flags_table[mreg->en_reg].offset);
-	} else {
-		pr_err(PMICTAG "regulator_enable fail, no en_reg(name=%s)\n", rdesc->name);
-		return -1;
 	}
-#if regulator_log
+
 	PMICLOG("regulator_enable(name=%s id=%d en_reg=%x vol_reg=%x) [%x]=0x%x\n", rdesc->name,
 		rdesc->id, mreg->en_reg, mreg->vol_reg, add, val);
-#endif
+
 	return 0;
 }
 
@@ -509,7 +513,7 @@ static int mtk_regulator_disable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	if (rdev->use_count == 0) {
-		pr_err(PMICTAG "regulator_disable fail (name=%s use_count=%d)\n", rdesc->name,
+		PMICLOG("regulator_disable fail (name=%s use_count=%d)\n", rdesc->name,
 			rdev->use_count);
 		return -1;
 	}
@@ -518,15 +522,11 @@ static int mtk_regulator_disable(struct regulator_dev *rdev)
 		pmic_set_register_value(mreg->en_reg, 0);
 		add = pmu_flags_table[mreg->en_reg].offset;
 		val = upmu_get_reg_value(pmu_flags_table[mreg->en_reg].offset);
-	} else {
-		pr_err(PMICTAG "regulator_disable fail, no en_reg(name=%s)\n", rdesc->name);
-		return -1;
 	}
 
-#if regulator_log
 	PMICLOG("regulator_disable(name=%s id=%d en_reg=%x vol_reg=%x use_count=%d) [%x]=0x%x\n",
 		rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, rdev->use_count, add, val);
-#endif
+
 	return 0;
 }
 
@@ -540,10 +540,9 @@ static int mtk_regulator_is_enabled(struct regulator_dev *rdev)
 
 	en = pmic_get_register_value(mreg->en_reg);
 
-#if regulator_log
 	PMICLOG("[PMIC]regulator_is_enabled(name=%s id=%d en_reg=%x vol_reg=%x en=%d)\n",
 		rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, en);
-#endif
+
 	return en;
 }
 
@@ -586,11 +585,10 @@ static int mtk_regulator_get_voltage_sel(struct regulator_dev *rdev)
 		}
 	}
 
-#if regulator_log
 	PMICLOG
 	    ("regulator_get_voltage_sel(name=%s id=%d en_reg=%x vol_reg=%x reg/sel:%d voltage:%d [0x%x]=0x%x)\n",
 	     rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, regVal, voltage, add, val);
-#endif
+
 	return regVal;
 }
 
@@ -601,10 +599,9 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
-#if regulator_log
 	PMICLOG("regulator_set_voltage_sel(name=%s id=%d en_reg=%x vol_reg=%x selector=%d)\n",
 		rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, selector);
-#endif
+
 /* VGP2
     0:1200000,->0
     1:1300000,->1
@@ -659,10 +656,9 @@ static int mtk_regulator_list_voltage(struct regulator_dev *rdev, unsigned selec
 		voltage = pVoltage[0];
 	}
 
-#if regulator_log
-	PMICLOG("regulator_list_voltage(name=%s id=%d en_reg=%x vol_reg=%x selector=%d voltage=%d)\n", rdesc->name,
-		desc->id, mreg->en_reg, mreg->vol_reg, selector, voltage);
-#endif
+/* PMICLOG("regulator_list_voltage(name=%s id=%d en_reg=%x vol_reg=%x selector=%d voltage=%d)\n", rdesc->name,
+ desc->id, mreg->en_reg, mreg->vol_reg, selector,voltage); */
+
 	return voltage;
 }
 
@@ -1560,7 +1556,7 @@ void low_battery_protect_init(void)
 
 void bat_h_int_handler(void)
 {
-	PMICLOG_DBG("[bat_h_int_handler]....\n");
+	PMICLOG("[bat_h_int_handler]....\n");
 
 	/* sub-task */
 #ifdef LOW_BATTERY_PROTECT
@@ -1591,7 +1587,7 @@ void bat_h_int_handler(void)
 
 void bat_l_int_handler(void)
 {
-	PMICLOG_DBG("[bat_l_int_handler]....\n");
+	PMICLOG("[bat_l_int_handler]....\n");
 
 	/* sub-task */
 #ifdef LOW_BATTERY_PROTECT
@@ -1758,7 +1754,7 @@ void battery_oc_protect_reinit(void)
 
 void fg_cur_h_int_handler(void)
 {
-	PMICLOG_DBG("[fg_cur_h_int_handler]....\n");
+	PMICLOG("[fg_cur_h_int_handler]....\n");
 
 	/* sub-task */
 #ifdef BATTERY_OC_PROTECT
@@ -1779,7 +1775,7 @@ void fg_cur_h_int_handler(void)
 
 void fg_cur_l_int_handler(void)
 {
-	PMICLOG_DBG("[fg_cur_l_int_handler]....\n");
+	PMICLOG("[fg_cur_l_int_handler]....\n");
 
 	/* sub-task */
 #ifdef BATTERY_OC_PROTECT
@@ -1929,7 +1925,7 @@ enum hrtimer_restart bat_percent_notify_task(struct hrtimer *timer)
 {
 	bat_percent_notify_flag = true;
 	wake_up_interruptible(&bat_percent_notify_waiter);
-	PMICLOG_DBG("bat_percent_notify_task is called\n");
+	PMICLOG("bat_percent_notify_task is called\n");
 
 	return HRTIMER_NORESTART;
 }
@@ -2366,7 +2362,7 @@ enum hrtimer_restart dlpt_notify_task(struct hrtimer *timer)
 {
 	dlpt_notify_flag = true;
 	wake_up_interruptible(&dlpt_notify_waiter);
-	PMICLOG_DBG("dlpt_notify_task is called\n");
+	PMICLOG("dlpt_notify_task is called\n");
 
 	return HRTIMER_NORESTART;
 }
@@ -2501,7 +2497,7 @@ void pwrkey_int_handler(void)
 	static bool key_press;
 #endif
 
-	PMICLOG_DBG("[pwrkey_int_handler] Press pwrkey %d\n", pmic_get_register_value(PMIC_PWRKEY_DEB));
+	PMICLOG("[pwrkey_int_handler] Press pwrkey %d\n", pmic_get_register_value(PMIC_PWRKEY_DEB));
 	if (pmic_get_register_value(PMIC_PWRKEY_DEB) == 1) {
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING_FIX)
 		if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT) {
@@ -2555,7 +2551,7 @@ void kpd_pmic_rstkey_handler(unsigned long pressed)
 
 void homekey_int_handler(void)
 {
-	PMICLOG_DBG("[homekey_int_handler] Press homekey %d\n",
+	PMICLOG("[homekey_int_handler] Press homekey %d\n",
 		pmic_get_register_value(PMIC_FCHRKEY_DEB));
 
 #ifdef KPD_PMIC_RSTKEY_MAP
@@ -2570,10 +2566,9 @@ void homekey_int_handler(void)
 	PMICLOG("[fchr_key_int_handler]....\n");
 #endif
 }
-
 void chrdet_int_handler(void)
 {
-	PMICLOG_DBG("[chrdet_int_handler]CHRDET status = %d....\n",
+	PMICLOG("[chrdet_int_handler]CHRDET status = %d....\n",
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
@@ -2593,6 +2588,7 @@ void chrdet_int_handler(void)
 #ifdef CONFIG_MTK_SMART_BATTERY
 	do_chrdet_int_task();
 #endif
+
 }
 
 #ifdef CONFIG_MTK_ACCDET
@@ -2600,7 +2596,7 @@ void accdet_int_handler(void)
 {
 	unsigned int ret = 0;
 
-	PMICLOG_DBG("[accdet_int_handler]....\n");
+	PMICLOG("[accdet_int_handler]....\n");
 
 	ret = accdet_irq_handler();
 	if (0 == ret)
@@ -2612,7 +2608,7 @@ void accdet_int_handler(void)
 #ifdef CONFIG_MTK_RTC
 void rtc_int_handler(void)
 {
-	PMICLOG_DBG("[rtc_int_handler]....\n");
+	PMICLOG("[rtc_int_handler]....\n");
 #ifndef CONFIG_EARLY_LINUX_PORTING
 	rtc_irq_handler();
 #endif
@@ -2654,7 +2650,7 @@ struct wake_lock pmicThread_lock;
 
 void wake_up_pmic(void)
 {
-	PMICLOG_DBG("[wake_up_pmic]\r\n");
+	PMICLOG("[wake_up_pmic]\r\n");
 	wake_up_process(pmic_thread_handle);
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -2675,7 +2671,7 @@ void mt_pmic_eint_irq(void)
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
 
-	PMICLOG_DBG("[mt_pmic_eint_irq] receive interrupt\n");
+	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
 	disable_irq_nosync(irq);
 	wake_up_pmic();
 
@@ -2695,7 +2691,7 @@ void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 		return;
 	}
 
-	PMICLOG_DBG("[pmic_enable_interrupt] intno=%d en=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n", intNo,
+	PMICLOG("[pmic_enable_interrupt] intno=%d en=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n", intNo,
 		en, str, shift, no, interrupts[shift].en, upmu_get_reg_value(interrupts[shift].en));
 
 	if (en == 1)
@@ -2720,7 +2716,7 @@ void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (
 		return;
 	}
 
-	PMICLOG_DBG("[pmic_register_interrupt_callback] intno=%d \r\n", intNo);
+	PMICLOG("[pmic_register_interrupt_callback] intno=%d \r\n", intNo);
 
 	interrupts[shift].interrupts[no].callback = EINT_FUNC_PTR;
 
@@ -2734,8 +2730,6 @@ void PMIC_EINT_SETTING(void)
 	unsigned int ints[2] = { 0, 0 };
 	struct device_node *node;
 #endif
-	PMICLOG("PMIC_EINT_SETTING enter");
-
 	upmu_set_reg_value(MT6350_INT_CON0, 0);
 	upmu_set_reg_value(MT6350_INT_CON1, 0);
 
@@ -2755,6 +2749,7 @@ void PMIC_EINT_SETTING(void)
 #ifdef CONFIG_MTK_RTC
 	pmic_register_interrupt_callback(20, rtc_int_handler);
 #endif
+
 	pmic_enable_interrupt(5, 1, "PMIC");
 	pmic_enable_interrupt(10, 1, "PMIC");
 	pmic_enable_interrupt(17, 1, "PMIC");
@@ -2772,26 +2767,23 @@ TBD */
 #else
 	node = of_find_compatible_node(NULL, NULL, "mediatek, pmic-eint");
 	if (node) {
-		ret = of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		if (ret == 0)
-			mt_gpio_set_debounce(ints[0], ints[1]);
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		mt_gpio_set_debounce(ints[0], ints[1]);
 
 		g_pmic_irq = irq_of_parse_and_map(node, 0);
-		disable_irq(g_pmic_irq);
-		ret = request_irq(g_pmic_irq, mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
+		ret =
+		    request_irq(g_pmic_irq, mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
+
 		enable_irq(g_pmic_irq);
-		enable_irq_wake(g_pmic_irq);
-		PMICLOG("enable_irq_wake mediatek, pmic-eint g_pmic_irq:%d ints:%d %d ",g_pmic_irq,ints[0],ints[1]);
 	} else
-		PMICLOG("%s mediatek, pmic-eint can't find compatible node\n", __func__);
+		PMICLOG("%s can't find compatible node\n", __func__);
 #endif
 	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6350_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
-	PMICLOG("PMIC_EINT_SETTING end");
 
 }
 
@@ -2804,7 +2796,7 @@ static void pmic_int_handler(void)
 #if 1
 	int0 = upmu_get_reg_value(MT6350_INT_CON0);
 	int1 = upmu_get_reg_value(MT6350_INT_CON1);
-	PMICLOG_DBG("int0 = %x int1 = %x\n", int0, int1);
+	PMICLOG("int0 = %x int1 = %x\n", int0, int1);
 	upmu_set_reg_value(MT6350_INT_CON0_CLR, 0x0210);	/* bit[9], bit[4] */
 
 #endif
@@ -2817,7 +2809,7 @@ static void pmic_int_handler(void)
 
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
-				PMICLOG_DBG("[PMIC_INT][%s]\n", interrupts[i].interrupts[j].name);
+				PMICLOG("[PMIC_INT][%s]\n", interrupts[i].interrupts[j].name);
 				if (interrupts[i].interrupts[j].callback != NULL) {
 					interrupts[i].interrupts[j].callback();
 					interrupts[i].interrupts[j].times++;
@@ -2850,7 +2842,7 @@ static int pmic_thread_kthread(void *x)
 
 		for (i = 0; i < ARRAY_SIZE(interrupts); i++) {
 			int_status_val = upmu_get_reg_value(interrupts[i].address);
-			PMICLOG_DBG("[PMIC_INT] after ,int_status_val[0x%x]=0x%x\n",
+			PMICLOG("[PMIC_INT] after ,int_status_val[0x%x]=0x%x\n",
 				interrupts[i].address, int_status_val);
 		}
 
@@ -3011,6 +3003,34 @@ void pmic_ftm_init(void)
 	PMICLOG("[pmic_ftm_init] Done\n");
 }
 
+unsigned int get_factor1(void)
+{
+	unsigned int value = 0;
+	unsigned int regv;
+	int ret;
+	value = pmic_get_register_value(PMIC_CID);
+	
+	regv = 0;
+	ret = pmic_read_interface(0x21E, &regv, 0x7F, 0);
+	value += (regv<<16);
+
+	regv = 0;
+	ret = pmic_read_interface(0x242, &regv, 0x7F, 8);
+	value += (regv<<24);
+
+	regv = 0;
+	ret = pmic_read_interface(0x2, &regv, 0xF, 4);
+	value += (regv<<8);
+
+	regv = 0;
+	ret = pmic_read_interface(0x04C, &regv, 0x1, 1);
+	value += (regv<<18);
+
+	//printk("get_factor1:%d\n",value);
+	return value;
+}
+EXPORT_SYMBOL(get_factor1);
+
 /*
  * HW Setting
  */
@@ -3021,7 +3041,7 @@ void PMIC_INIT_SETTING_V1(void)
 
 	chip_version = pmic_get_register_value(PMIC_CID);
 
-	PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 6350 PMIC Chip = 0x%x\n", chip_version);
+	//printk("[Kernel_PMIC_INIT_SETTING_V1] 6350 PMIC Chip = 0x%x\n", chip_version);
 	/* [7:4]: RG_VCDT_HV_VTH; 7V OVP, Tim,Zax */
 	ret = pmic_config_interface(0x2, 0xB, 0xF, 4);
 	/* [3:1]: RG_VBAT_OV_VTH; VBAT_OV=4.3V, Tim Zax, need to check Description */
@@ -3189,9 +3209,6 @@ void PMIC_INIT_SETTING_V1(void)
 	/* [15:15]: RG_VREF18_ENB_MD; JT confirmed with ZF */
 	ret = pmic_config_interface(0x778, 0x1, 0x1, 15);
 
-	ret = pmic_config_interface(MT6350_PMIC_RG_VCAM_IO_EN_ADDR, 0x0, MT6350_PMIC_RG_VCAM_IO_EN_MASK, MT6350_PMIC_RG_VCAM_IO_EN_SHIFT);	
-	ret = pmic_config_interface(MT6350_PMIC_RG_VGP1_EN_ADDR, 0x0, MT6350_PMIC_RG_VGP1_EN_MASK, MT6350_PMIC_RG_VGP1_EN_SHIFT);
-
 	/* GPIO5 WORKAROUND */
 	/* [7:7]: RG_VCN33_EN_BT */
 	ret = pmic_config_interface(0x416, 0x1, 0x1, 7);
@@ -3203,12 +3220,23 @@ void PMIC_INIT_SETTING_V1(void)
 	ret = pmic_config_interface(0x512, 0x1, 0x1, 14);
 	/* [1:1]: VCN18_LP_SET */
 	ret = pmic_config_interface(0x512, 0x1, 0x1, 1);
-	PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 2015-01-21...\n");
+	//PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 2015-01-21...\n");
 
 	/* External Buck WORKAROUND */
 	/* [1:1]: STRUP_EXT_PMIC_SEL */
 	ret = pmic_config_interface(0x04C, 0x1, 0x1, 1);
+	
+	ret = pmic_config_interface(MT6350_PMIC_RG_VCAM_IO_EN_ADDR, 0x0, MT6350_PMIC_RG_VCAM_IO_EN_MASK, MT6350_PMIC_RG_VCAM_IO_EN_SHIFT);
+	
+	ret = pmic_config_interface(MT6350_PMIC_RG_VGP1_EN_ADDR, 0x0, MT6350_PMIC_RG_VGP1_EN_MASK, MT6350_PMIC_RG_VGP1_EN_SHIFT);
 
+	//0x0  8秒   
+	//0x1  11秒
+	//0x10 14秒
+	//0x11 5秒
+	ret = pmic_config_interface(MT6350_PMIC_RG_PWRKEY_RST_TD_ADDR,  0x0, MT6350_PMIC_RG_PWRKEY_RST_TD_MASK,  MT6350_PMIC_RG_PWRKEY_RST_TD_SHIFT);
+	ret = pmic_config_interface(MT6350_PMIC_RG_PWRRST_TMR_DIS_ADDR, 0x1,  MT6350_PMIC_RG_PWRRST_TMR_DIS_MASK, MT6350_PMIC_RG_PWRRST_TMR_DIS_SHIFT);
+	ret = pmic_config_interface(MT6350_PMIC_RG_PWRKEY_RST_EN_ADDR,  0x00, MT6350_PMIC_RG_PWRKEY_RST_EN_MASK,  MT6350_PMIC_RG_PWRKEY_RST_EN_SHIFT);
 }
 
 #if defined CONFIG_MTK_LEGACY
@@ -3914,71 +3942,11 @@ int get_battery_plug_out_status(void)
 	return g_plug_out_status;
 }
 
-static void pmic_early_suspend(void)
-{
-	pmic_set_register_value(PMIC_RG_VREF18_ENB, 0);
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX, 1);
-	pmic_set_register_value(PMIC_RG_AUD26M_DIV4_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_HW_MODE, 1);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_SEL, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN, 1);
-}
-
-static void pmic_late_resume(void)
-{
-	pmic_set_register_value(PMIC_RG_VREF18_ENB, 0);
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX, 1);
-	pmic_set_register_value(PMIC_RG_AUD26M_DIV4_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_HW_MODE, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_SEL, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN, 0);
-}
-
-static int pmic_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
-{
-	struct fb_event *evdata = data;
-	int blank;
-
-	/* skip if it's not a blank event */
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
-	if (evdata == NULL)
-		return 0;
-	if (evdata->data == NULL)
-		return 0;
-
-	blank = *(int *)evdata->data;
-
-	switch (blank) {
-	/* LCM ON */
-	case FB_BLANK_UNBLANK:
-		pmic_late_resume();
-		break;
-	/* LCM OFF */
-	case FB_BLANK_POWERDOWN:
-		pmic_early_suspend();
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
-static struct notifier_block pmic_fb_notifier = {
-	.notifier_call = pmic_fb_notifier_callback,
-};
-
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
 
-	PMICLOG_DBG("******** MT pmic driver probe!! ********\n");
+	PMICLOG("******** MT pmic driver probe!! ********\n");
 
 	detect_battery_plug_out_status();
 	dump_ldo_status_read_debug();
@@ -4013,7 +3981,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 		PMICLOG("[pmic_thread_kthread_mt6350] creation fails\n");
 	} else {
 		wake_up_process(pmic_thread_handle);
-		PMICLOG_DBG("[pmic_thread_kthread_mt6350] kthread_create Done\n");
+		PMICLOG("[pmic_thread_kthread_mt6350] kthread_create Done\n");
 	}
 	PMIC_EINT_SETTING();
 	PMICLOG("[PMIC_EINT_SETTING] Done\n");
@@ -4106,10 +4074,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC] device_create_file for EM : done.\n");
 
 	/* pwrkey_sw_workaround_init(); */
-	if (fb_register_client(&pmic_fb_notifier)) {
-		PMICLOG("register FB client failed!\n");
-		return 0;
-	}
 	return 0;
 }
 
@@ -4127,7 +4091,7 @@ static void pmic_mt_shutdown(struct platform_device *dev)
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 {
-	PMICLOG_DBG("******** MT pmic driver suspend!! ********\n");
+	PMICLOG("******** MT pmic driver suspend!! ********\n");
 
 #ifdef LOW_BATTERY_PROTECT
 	lbat_min_en_setting(0);
@@ -4150,40 +4114,13 @@ static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 		MT6350_INT_CON2, upmu_get_reg_value(MT6350_INT_CON2)
 	    );
 #endif
-#if 1
-	/*upmu_set_rg_vref18_enb(1);*/
-	pmic_set_register_value(PMIC_RG_VREF18_ENB, 1);
-	/*upmu_set_rg_adc_deci_gdly(1);*/
-	pmic_set_register_value(PMIC_RG_ADC_DECI_GDLY, 1);
-	/*upmu_set_rg_clksq_en_aux(1);*/
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX, 1);
-	/*upmu_set_rg_aud26m_div4_ck_pdn(0);*/
-	pmic_set_register_value(PMIC_RG_AUD26M_DIV4_CK_PDN, 0);
-	/*upmu_set_rg_auxadc_sdm_sel_hw_mode(1);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE, 1);
-	/*upmu_set_rg_auxadc_sdm_ck_hw_mode(1);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_HW_MODE, 1);
-	/*upmu_set_rg_auxadc_sdm_ck_sel(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_SEL, 0);
-	/*upmu_set_rg_auxadc_sdm_ck_pdn(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_PDN, 0);
-	/*upmu_set_rg_auxadc_sdm_ck_wake_pdn(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN, 0);
-	PMICLOG("MT pmic driver suspend henry %x %x %x!!\n",
-		pmic_get_register_value(PMIC_RG_VREF18_ENB),
-		pmic_get_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE),
-		pmic_get_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN));
-#endif
-#if 1
-/* for PMIC MT6350 suspend->resume can trigger HWOCV by SW */
-	pmic_set_register_value(PMIC_STRUP_AUXADC_START_SEL, 1);
-#endif
+
 	return 0;
 }
 
 static int pmic_mt_resume(struct platform_device *dev)
 {
-	PMICLOG_DBG("******** MT pmic driver resume!! ********\n");
+	PMICLOG("******** MT pmic driver resume!! ********\n");
 
 #ifdef LOW_BATTERY_PROTECT
 	lbat_min_en_setting(0);
@@ -4225,32 +4162,7 @@ static int pmic_mt_resume(struct platform_device *dev)
 		MT6350_INT_CON2, upmu_get_reg_value(MT6350_INT_CON2)
 	    );
 #endif
-#if 1
-	/*upmu_set_rg_vref18_enb(0);*/
-	pmic_set_register_value(PMIC_RG_VREF18_ENB, 0);
-	/*upmu_set_rg_clksq_en_aux(1);*/
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX, 1);
-	/*upmu_set_rg_aud26m_div4_ck_pdn(0);*/
-	pmic_set_register_value(PMIC_RG_AUD26M_DIV4_CK_PDN, 0);
-	/*upmu_set_rg_auxadc_sdm_sel_hw_mode(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE, 0);
-	/*upmu_set_rg_auxadc_sdm_ck_hw_mode(1);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_HW_MODE, 1);
-	/*upmu_set_rg_auxadc_sdm_ck_sel(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_SEL, 0);
-	/*upmu_set_rg_auxadc_sdm_ck_pdn(0);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_PDN, 0);
-	/*upmu_set_rg_auxadc_sdm_ck_wake_pdn(1);*/
-	pmic_set_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN, 1);
-#endif
-	PMICLOG("MT pmic driver resume henry %x %x %x!!\n",
-		pmic_get_register_value(PMIC_RG_VREF18_ENB),
-		pmic_get_register_value(PMIC_RG_AUXADC_SDM_SEL_HW_MODE),
-		pmic_get_register_value(PMIC_RG_AUXADC_SDM_CK_WAKE_PDN));
-#if 1
-/* restore to HW mode */
-	pmic_set_register_value(PMIC_STRUP_AUXADC_START_SEL, 0);
-#endif
+
 	return 0;
 }
 
@@ -4344,7 +4256,7 @@ static int __init pmic_mt_init(void)
 
 	pmic_auxadc_init();
 
-	PMICLOG("[pmic_mt_init] Initialization : DONE !!\n");
+	PMICLOG("****[pmic_mt_init] Initialization : DONE !!\n");
 
 	return 0;
 }

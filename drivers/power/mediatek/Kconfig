@@ -5,201 +5,166 @@ menuconfig MEDIATEK_CHARGING_SOLUTION
 
 config MTK_SMART_BATTERY
 	tristate "MediaTek Smart Battery Driver"
-	default n
 	help
 	  Check this to enable MediaTek smart battery driver.
 	  The driver supports charging control flow.
 	  It maintais both charger and battery status.
 	  It also includes Mediatek gas gauge.
-
+	default n
 
 config POWER_EXT
 	tristate "MediaTek Power Ext"
-	default n
 	help
 	  Check this if the device is not powered by battery.
 	  For example, if the device is powered by AC adapter.
 	  Select No if the device needs info about
 	  battery voltage, temperature, etc.
-
+	default n
 
 config MTK_AUTO_POWER_ON_WITH_CHARGER
 	bool "auto power on when charger in"
-	default n
 	help
 	  Check this to support auto power on with charger.
 
 	  In kernel it records necessary info in RTC to
 	  support the boot behavior.
-
+	default n
 
 config MTK_SWCHR_SUPPORT
 	tristate "MediaTek switch charger"
-	default n
 	help
 	  This is to enable switching charger control flow.
 
 	  Set to yes if switching charger is used.
 	  Set to no if pmic pulse charger is used.
-
-
-config MTK_BQ24157_SUPPORT
-	bool "MTK_BQ24157_SUPPORT"
 	default n
-	help
-	  This is to enable MediaTek supports to BQ24157.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ24157 is used.
-
 
 config MTK_BQ24160_SUPPORT
 	bool "MTK_BQ24160_SUPPORT"
-	default n
 	help
 	  This is to enable MediaTek supports to BQ24160.
 	  It depends on config MTK_SMART_BATTERY
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ24160 is used.
-
+	default n
 
 config MTK_BQ24196_SUPPORT
 	bool "MediaTek Battery driver for TI BQ24196"
-	default n
 	help
 	  BQ24196 charger IC support
-	  This is to enable MediaTek supports to BQ24196.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ24196 is used.
-
+          This is to enable MediaTek supports to BQ24196.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ24196 is used.
+	default n
 
 config MTK_BQ24296_SUPPORT
 	bool "MTK_BQ24296_SUPPORT"
-	default n
 	help
-	  This is to enable MediaTek supports to BQ24296.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ24296 is used.
+          This is to enable MediaTek supports to BQ24296.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ24296 is used.
+	default n
 
 config MTK_NCP1854_SUPPORT
 	bool "MTK_NCP1854_SUPPORT"
-	default n
 	help
-	  This is to enable MediaTek supports to NCP1854.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if NCP1854 is used.
-
+          This is to enable MediaTek supports to NCP1854.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if NCP1854 is used.
+	default n
 
 config MTK_BQ24297_SUPPORT
 	bool "MTK_BQ24297_SUPPORT"
-	default n
 	help
-	  This is to enable MediaTek supports to BQ24297.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ24297 is used.
-
+          This is to enable MediaTek supports to BQ24297.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ24297 is used.
+	default n
 
 config MTK_BQ25890_SUPPORT
-	bool "MTK_BQ25890_SUPPORT"
+        bool "MTK_BQ25890_SUPPORT"
+        help
+          This is to enable MediaTek supports to BQ25890.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ25890 is used.
 	default n
-	help
-	  This is to enable MediaTek supports to BQ25890.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ25890 is used.
-
 
 config MTK_FAN5405_SUPPORT
 	bool "MTK_FAN5405_SUPPORT"
-	default n
 	help
-	  This is to enable MediaTek supports to FAN5405.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if FAN5405 is used.
-
-
-config MTK_RT9536_SUPPORT
-	bool "MTK_RT9536_SUPPORT"
+          This is to enable MediaTek supports to FAN5405.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if FAN5405 is used.
 	default n
-	help
-	  This is to enable MediaTek supports to RT9536.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if RT9536 is used.
 
 config MTK_DUAL_INPUT_CHARGER_SUPPORT
-	bool "MTK_DUAL_INPUT_CHARGER_SUPPORT"
-	default n
-	help
-	  This is to enable MediaTek dual input charging.
-	  The feature can charge battery and use otg device
-	  at the same time with specific hardware.
+        bool "MTK_DUAL_INPUT_CHARGER_SUPPORT"
+        help
+          This is to enable MediaTek dual input charging.
+          The feature can charge battery and use otg device
+          at the same time with specific hardware.
+        default n
 
 config MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	bool "MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION"
-	default n
 	help
 	  This to disable power on off condition check for device.
 	  The check includes battery voltage and
 	  battery temperature.
 	  Enable this config if the device has no battery.
-
+	default n
 
 config MTK_KERNEL_POWER_OFF_CHARGING
 	bool "MTK_KERNEL_POWER_OFF_CHARGING"
-	default n
 	help
-	  yes : support KPOC feature, power off charging would running by
-	  kernel and charging animation by kpoc service. no: not support KPOC
-	  feature.
-	  device won't enter charging mode if config is no.
-
+	   yes : support KPOC feature, power off charging would running by
+	   kernel and charging animation by kpoc service. no: not support KPOC
+	   feature.
+	   device won't enter charging mode if config is no.
+	default n
 
 config MTK_BATTERY_PROTECT
 	bool "MTK_BATTERY_PROTECT"
-	default n
 	help
 	  Mediatek  PMIC supports low battery protect.
 	  This config enables notification of low battery event.
 	  Enable this feature to support throttle of CPU power
 	  to perform battery protect.
-
+	default n
 
 config MTK_BATTERY_THROTTLING
 	bool "MTK_BATTERY_THROTTLING"
-	default n
 	help
 	  Enable this feature to support active throttle
 	  mechanism of CPU to save battery life.
 	  The feature throttles CPU or GPU actively
 	  to avoid device power drop due to instant
 	  peak current.
-
+	default n
 
 config MTK_ENABLE_AGING_ALGORITHM
 	bool "Enable MediaTek Battery Aging Algorithm"
-	default n
 	help
 	  Enable this feature to enable aging check of battery
 	  This feature helps to calibrate fuel gauge
 	  by battery voltage.
 	  It also helpful to predict aging of battery.
-
+	default n
 
 config MTK_BATTERY_LIFETIME_DATA_SUPPORT
 	bool "Enable Battery LifeTime Data Logging"
-	default n
 	help
 	  This config is to log battery related info.
 	  Set yes and it would keep max/min voltage,
 	  max/min charging current, max/min battery
 	  temperature, etc.
-
+	default n
 
 config SOC_BY_HW_FG
 	bool "Use MediaTek H/W Fuel Gauge"
@@ -214,19 +179,19 @@ config SOC_BY_AUXADC
 	bool "Only use AUXADC for Fuel Gauge"
 	default n
 	help
-	  Mediatek fuel gauge algorithm option.
-	  Enable this config to use MediaTek
-	  voltage-based fuel gauge function.
-	  It depends on the PMIC capability.
+          Mediatek fuel gauge algorithm option.
+          Enable this config to use MediaTek
+          voltage-based fuel gauge function.
+          It depends on the PMIC capability.
 
 config SOC_BY_SW_FG
 	bool "Use MediaTek S/W Fuel Gauge"
 	default n
 	help
-	  Mediatek fuel gauge algorithm option.
-	  Enable this config to use MediaTek
-	  software fuel gauge function.
-	  It depends on the PMIC capability.
+          Mediatek fuel gauge algorithm option.
+          Enable this config to use MediaTek
+          software fuel gauge function.
+          It depends on the PMIC capability.
 
 config SWCHR_POWER_PATH
 	bool "External charger IC supports powerpath"
@@ -311,15 +276,6 @@ config MTK_HAFG_20
 	  Set Yes to support Fuel Gauge 2.0 feature.
 	  Set No to disable Fuel Gauge 2.0.
 
-config MTK_EMBEDDED_BATTERY
-	bool "MediaTek Fuel Gauge 2.0 Embedded Battery"
-	default n
-	help
-	  Embedded Battery Feature
-	  Please note that fuel gauge 2.0 feature is must
-	  Set Yes to support Fuel Gauge 2.0 Embedded Battery feature.
-	  Set No to disable Fuel Gauge 2.0 Embedded Battery feature.
-
 config MTK_PUMP_EXPRESS_SUPPORT
 	bool "MediaTek PUMP EXPRESS"
 	default n
@@ -338,15 +294,6 @@ config MTK_PUMP_EXPRESS_PLUS_SUPPORT
 	  Set Yes to enable PE+.
 	  Set No to disable PE+.
 
-config MTK_PUMP_EXPRESS_PLUS_20_SUPPORT
-	bool "MediaTek PUMP EXPRESS PLUS 2.0"
-	default n
-	help
-	  fast charging, by using switch charger
-	  to achive better charging ability,it reduce more IC heat than PE+
-	  Set Yes to enable PE+20.
-	  Set No to disable PE+20.
-
 config MTK_BIF_SUPPORT
 	bool "MTK_BIF_SUPPORT"
 	default n
@@ -355,9 +302,3 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
-
-config ONTIM_POWER_DRIVER
-	bool "ONTIM_POWER_DRIVER"
-	default n
-	help
-	  ontim power driver

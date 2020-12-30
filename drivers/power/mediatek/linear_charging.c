@@ -98,7 +98,7 @@
 #define CV_CHECK_DELAT_FOR_BANDGAP	80	/* 80mV */
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 #define BJT_LIMIT			1200000	/* 1.2W */
-#ifndef TA_START_VCHR_TUNUNG_VOLTAGE
+#ifndef TA_START_VCHR_TUNUNG_VOLTAG
 #define TA_START_VCHR_TUNUNG_VOLTAGE	3700	/* for isink blink issue */
 #define TA_CHARGING_CURRENT		CHARGE_CURRENT_1500_00_MA
 #endif				/* TA_START_VCHR_TUNUNG_VOLTAG */
@@ -1133,6 +1133,9 @@ static void pchr_turn_on_charging(void)
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] charging current is set 0mA, turn off charging !\r\n");
 		} else {
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+if (ta_check_ta_control == KAL_FALSE)
+#endif
 			{
 				if (ulc_cv_charging_current_flag == KAL_TRUE)
 					battery_charging_control(CHARGING_CMD_SET_CURRENT,

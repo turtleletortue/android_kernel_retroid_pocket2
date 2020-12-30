@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include "fan5405.h"
 #include <linux/delay.h>
 #include <linux/init.h>
@@ -467,15 +454,10 @@ s32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
 	s32 status;
 
-	if (cmd < CHARGING_CMD_NUMBER) {
-		if (charging_func[cmd] != NULL)
-			status = charging_func[cmd](data);
-		else {
-			battery_log(BAT_LOG_CRTI, "[chr_control_interface]cmd:%d not supported\n", cmd);
-			status = STATUS_UNSUPPORTED;
-		}
-	} else
-		status = STATUS_UNSUPPORTED;
+	if (cmd < CHARGING_CMD_NUMBER)
+		status = charging_func[cmd] (data);
+	else
+		return STATUS_UNSUPPORTED;
 
 	return status;
 }
