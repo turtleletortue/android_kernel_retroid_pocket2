@@ -547,11 +547,11 @@ static void lcm_get_params(LCM_PARAMS *params)
     
 	params->dsi.vertical_sync_active				= 8; //8;	//2;
 	params->dsi.vertical_backporch					= 8; //18;	//14;
-	params->dsi.vertical_frontporch					= 10; //20;	//16;
+	params->dsi.vertical_frontporch					= 18; //20;	//16;
 	params->dsi.vertical_active_line				= FRAME_HEIGHT; 
 
 	params->dsi.horizontal_sync_active				= 40;	//2;
-	params->dsi.horizontal_backporch				= 50;//120;	//60;	//42;
+	params->dsi.horizontal_backporch				= 50;//  
 	params->dsi.horizontal_frontporch				= 50;//100;	//60;	//44;
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
@@ -565,47 +565,64 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_suspend(void)
 {
+	mdelay(50);
 	SET_RESET_PIN(0);         // PINMUX_GPIO70__FUNC_LCM_RST
-	mdelay(50);
+	mdelay(100);
 	enable_fpga(0,FPGA_PWR2); // PINMUX_GPIO16__FUNC_GPIO16 
-	mdelay(50);
+	mdelay(100);
 	enable_fpga(0,FPGA_PWR1); // PINMUX_GPIO20__FUNC_GPIO20 
-	mdelay(50);
+	mdelay(100);
 	enable_fpga(0,LCM_VS);    // PINMUX_GPIO74__FUNC_GPIO74
+	mdelay(50);
 	enable_fpga(0,HDMI_BOOST);
 	printk("lcm_suspend\n");
 }
 
 static void lcm_resume(void)
 {
+	// Disable VSP/VSN and Assert Reset (Active low)
 	SET_RESET_PIN(0);
 	enable_fpga(0,LCM_VS);
-	mdelay(20);
+	mdelay(10);
+	
+	// Power up FPGA, need as least 210ms ¡À10% before Config_Done
 	enable_fpga(1,FPGA_PWR1);
-	mdelay(20);
+	mdelay(10);
 	enable_fpga(1,FPGA_PWR2);
-	mdelay(300);
-	SET_RESET_PIN(1);
-	mdelay(50);
-	enable_fpga(1,LCM_VS);
+	mdelay(250); 
+	
+	// FPGA need 55ms at most to complete LCM reset process
+	SET_RESET_PIN(1);		
+	mdelay(100);
+	
+	// Enable LCM VSP/VSN and Deassert Reset (Active High)	
+	enable_fpga(1,LCM_VS);	
 	enable_fpga(1,HDMI_BOOST);
 	printk("lcm_resume\n");
 }
 
 static void lcm_init(void)
 {
+	// Disable VSP/VSN and Assert Reset (Active low)
 	SET_RESET_PIN(0);
 	enable_fpga(0,LCM_VS);
-	mdelay(20);
+	mdelay(10);
+	
+	// Power up FPGA, need as least 210ms ¡À10% before Config_Done
 	enable_fpga(1,FPGA_PWR1);
-	mdelay(20);
+	mdelay(10);
 	enable_fpga(1,FPGA_PWR2);
-	mdelay(300);
-	SET_RESET_PIN(1);
-	mdelay(50);
-	enable_fpga(1,LCM_VS);
+	mdelay(250); 
+	
+	// FPGA need 55ms at most to complete LCM reset process
+	SET_RESET_PIN(1);		
+	mdelay(100);
+	
+	// Enable LCM VSP/VSN and Deassert Reset (Active High)	
+	enable_fpga(1,LCM_VS);	
+	enable_fpga(1,HDMI_BOOST);
+	
 	printk("lcm_init\n");
-	//push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
 
