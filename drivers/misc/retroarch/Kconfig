@@ -1,7 +1,6 @@
 
 menuconfig RETROARCH_PLATFORM
 	bool "RetroArch Platform Configuration"
-	select FW_LOADER_USER_HELPER_FALLBACK
 	help
 	  Check this to enable RetroArch Platform configuration.
 
