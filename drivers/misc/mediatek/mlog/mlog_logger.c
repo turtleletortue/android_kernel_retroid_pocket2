@@ -529,7 +529,8 @@ static void mlog_procinfo(void)
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 		oom_score_adj = lowmem_oom_score_adj_to_oom_adj(p->signal->oom_score_adj);
 #else
-		oom_score_adj = p->signal->oom_adj;
+//		oom_score_adj = p->signal->oom_adj;
+		oom_score_adj = 0;
 #endif
 
 		if (max_adj < oom_score_adj || oom_score_adj < min_adj)
