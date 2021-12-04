@@ -1,0 +1,13 @@
+
+menuconfig RETROARCH_PLATFORM
+	bool "RetroArch Platform Configuration"
+	select FW_LOADER_USER_HELPER_FALLBACK
+	help
+	  Check this to enable RetroArch Platform configuration.
+
+if RETROARCH_PLATFORM
+
+source "drivers/misc/retroarch/fpga/Kconfig"
+source "drivers/misc/retroarch/hdmi/Kconfig"
+
+endif

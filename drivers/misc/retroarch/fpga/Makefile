@@ -1,0 +1,1 @@
+obj-$(CONFIG_RETROARCH_FPGA) := fpga_gpio.o

@@ -1,0 +1,1 @@
+obj-y += h62mipi_Sensor.o

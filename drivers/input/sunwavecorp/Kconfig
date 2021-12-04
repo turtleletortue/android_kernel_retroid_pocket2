@@ -1,0 +1,24 @@
+menu "sunwavecorp sensor Device"
+
+menuconfig SUNWAVECORP
+        tristate "sunwavecorp fp sensor "
+        default y
+        ---help---
+          Say Y here for supporting sunwavecorp sensor
+
+if SUNWAVECORP
+
+choice
+	prompt "sunwavecorp sensor for"
+	default SUNWAVECORP_MT6797  
+
+config SUNWAVECORP_MT6797
+        bool " MT6797 with dts"
+        default y
+        ---help---
+          sunwavecorp sensor for MT6797 with dts          
+endchoice
+
+endif
+
+endmenu
