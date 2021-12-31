@@ -11,3 +11,16 @@ source "drivers/misc/retroarch/fpga/Kconfig"
 source "drivers/misc/retroarch/hdmi/Kconfig"
 
 endif
+
+menuconfig RETROARCH_PLATFORM_POCKET1
+	bool "RetroArch Platform Configuration Pocket1"
+	select FW_LOADER_USER_HELPER_FALLBACK
+	help
+	  Check this to enable RetroArch Platform configuration on Retroid Pocket 1.
+
+if RETROARCH_PLATFORM
+
+source "drivers/misc/retroarch/fpga_pocket1/Kconfig"
+source "drivers/misc/retroarch/hdmi_pocket1/Kconfig"
+
+endif
