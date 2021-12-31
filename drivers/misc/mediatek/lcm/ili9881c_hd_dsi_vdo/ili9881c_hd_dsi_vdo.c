@@ -547,15 +547,15 @@ static void lcm_get_params(LCM_PARAMS *params)
     
 	params->dsi.vertical_sync_active				= 8; //8;	//2;
 	params->dsi.vertical_backporch					= 8; //18;	//14;
-	params->dsi.vertical_frontporch					= 18; //20;	//16;
+	params->dsi.vertical_frontporch					= 8; //20;	//16;
 	params->dsi.vertical_active_line				= FRAME_HEIGHT; 
 
-	params->dsi.horizontal_sync_active				= 40;	//2;
-	params->dsi.horizontal_backporch				= 50;//  
-	params->dsi.horizontal_frontporch				= 50;//100;	//60;	//44;
+	params->dsi.horizontal_sync_active				= 16;	//2;
+	params->dsi.horizontal_backporch				= 43;//  
+	params->dsi.horizontal_frontporch				= 43;//100;	//60;	//44;
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 240;//250;//200;//230;
+	params->dsi.PLL_CLOCK = 230;//250;//200;//230;
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 4;
 }

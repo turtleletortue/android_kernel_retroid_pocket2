@@ -86,8 +86,6 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 
 	return RSUCCESS;
 }
-EXPORT_SYMBOL(mt_set_gpio_pull_enable_base);
-
 
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_pull_enable_base(unsigned long pin)
@@ -192,8 +190,6 @@ int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 
 	return RSUCCESS;
 }
-EXPORT_SYMBOL(mt_set_gpio_pull_select_base);
-
 
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_pull_select_base(unsigned long pin)

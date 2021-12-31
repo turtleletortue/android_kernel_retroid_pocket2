@@ -46,7 +46,6 @@ static ssize_t brightness_store(struct device *dev,
 	if (ret)
 		return ret;
 
-	printk("brightness_store %d\n",state);
 	if (state == LED_OFF)
 		led_trigger_remove(led_cdev);
 	__led_set_brightness(led_cdev, state);

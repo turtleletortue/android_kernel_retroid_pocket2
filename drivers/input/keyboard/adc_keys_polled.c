@@ -33,7 +33,7 @@
 #include <linux/time.h>
 
 #define DRV_NAME	"adc-keys-polled"
-#define SLOW_MODE    500
+#define SLOW_MODE    50
 #define FAST_MODE    2
 
 //#define __ADC_DEBUG__
@@ -276,7 +276,7 @@ static ssize_t sysfs_set_interval(struct device *dev, struct device_attribute *a
 	int ret;
 	ret = kstrtouint(buf, 0, &poll_interval);
 	mutex_lock(&input->mutex);
-	//polldev->poll_interval = poll_interval;
+	polldev->poll_interval = poll_interval;
 	if (input->users) {
 		cancel_delayed_work_sync(&polldev->work);
 		adc_polldev_queue_work(polldev);

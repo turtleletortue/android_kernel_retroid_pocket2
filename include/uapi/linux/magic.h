@@ -17,6 +17,7 @@
 #define HUGETLBFS_MAGIC 	0x958458f6	/* some random number */
 #define SQUASHFS_MAGIC		0x73717368
 #define ECRYPTFS_SUPER_MAGIC	0xf15f
+#define SEFS_SUPER_MAGIC        0xe745b20c
 #define EFS_SUPER_MAGIC		0x414A53
 #define EXT2_SUPER_MAGIC	0xEF53
 #define EXT3_SUPER_MAGIC	0xEF53

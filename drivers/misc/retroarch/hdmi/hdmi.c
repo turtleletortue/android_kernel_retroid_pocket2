@@ -17,8 +17,7 @@
 #include "../fpga/fpga_gpio.h"
 
 extern int  backlight_brightness_set(int level);
-extern void speaker_power(int state);
-int get_hdmi_state(void);
+extern void accdet_hdmi_enable(int enable);
 
 struct hdmi_data {
 	int init;
@@ -53,7 +52,6 @@ enum {
 };
 
 static struct hdmi_data drv_data = {0};
-static int lcd_on = 1;
 
 static ssize_t sysfs_get_hpd(struct device *dev, struct device_attribute *attr, char * buf)
 {
@@ -65,40 +63,17 @@ static ssize_t sysfs_set_voice(struct device *dev, struct device_attribute *attr
 	int ret;
 	unsigned int value = 0;
 	ret = kstrtouint(buf, 0, &value);
-	//accdet_hdmi_enable(value);
+	accdet_hdmi_enable(value);
 	printk("[hdmi] sysfs_set_voice:%d\n",value);
-	return size;
-}
-
-static ssize_t sysfs_get_lcd(struct device *dev, struct device_attribute *attr, char * buf)
-{
-	return sprintf(buf, "%d\n", lcd_on);
-}
-
-static ssize_t sysfs_set_lcd(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
-{
-	int ret;
-	unsigned int value = 0;
-	ret = kstrtouint(buf, 0, &value);
-	if(get_hdmi_state()){
-		if(value == 0)
-			backlight_brightness_set(0);
-		else
-			backlight_brightness_set(500);
-	}
-	lcd_on = value;
-	printk("[hdmi] sysfs_set_lcd:%d\n",value);
 	return size;
 }
 
 static DEVICE_ATTR(hpd,   0644, sysfs_get_hpd,   NULL);
 static DEVICE_ATTR(voice, 0644, NULL, sysfs_set_voice);
-static DEVICE_ATTR(lcd, 0644, sysfs_get_lcd, sysfs_set_lcd);
 
 static struct attribute *sysfs_attributes[] = {
     &dev_attr_hpd.attr,
 	&dev_attr_voice.attr,
-	&dev_attr_lcd.attr,
     NULL
 };
 
@@ -131,37 +106,28 @@ static void boot_check_hpd_once(unsigned long a)
 	hdmi_eint_func(0,0);
 }
 
-// 0 is out, 1 is in
-int get_hdmi_state(void)
-{
-	if(drv_data.gpio == 0)
-		return -1;
-	return gpio_get_value(drv_data.gpio);
-}
-EXPORT_SYMBOL(get_hdmi_state);
-
 static void hdmi_eint_work_callback(struct work_struct *work)
 {
 	int  level = 0;
-	//char *name = "DEV_NAME=retroarch_hdmi";
-	//char *envp[2] = {name, NULL};
+	char *name = "DEV_NAME=retroarch_hdmi";
+	char *envp[2] = {name, NULL};
+	//读取gpio电平
 	level = gpio_get_value(drv_data.gpio);
+	//判断状态
 	printk("[hdmi] hdmi_eint_work_callback gpio: %d, level: %d.\n", drv_data.gpio, level);
 	if (level == EINT_PIN_PLUG_OUT)
 	{
-		if(lcd_on == 0)
-			backlight_brightness_set(500);
+		//拔出
 		irq_set_irq_type(drv_data.irq, IRQ_TYPE_LEVEL_HIGH);
 		printk("[hdmi] hdmi_eint_work_callback HDMI Plug Out.\n");
-		speaker_power(1);
+		accdet_hdmi_enable(0);
 	}
 	else
 	{
-		if(lcd_on == 0)
-			backlight_brightness_set(0);
+		//插入
 		irq_set_irq_type(drv_data.irq, IRQ_TYPE_LEVEL_LOW);
 		printk("[hdmi] hdmi_eint_work_callback HDMI Plug In.\n");
-		speaker_power(0);
+		accdet_hdmi_enable(1);
 	}
 	gpio_set_debounce(drv_data.gpio, 1000 * 1000);
 	enable_irq(drv_data.irq);
@@ -175,9 +141,9 @@ static int hdmi_probe(struct platform_device *dev)
 	int ret = 0;
 	u32 ints[2] = { 0, 0 };
 	node = dev->dev.of_node;
-	//ç”³è¯·å”¤é†’ç³»ç»Ÿ
+	//申请唤醒系统
 	device_init_wakeup(&dev->dev, WAKE_UP);
-	//è®¾ç½®gpio
+	//设置gpio
 	drv_data.hdmi_gpio = devm_pinctrl_get(&dev->dev);
 	drv_data.hdmi_hpd  = pinctrl_lookup_state(drv_data.hdmi_gpio, "hdmi_hpd");
 	if (IS_ERR(drv_data.hdmi_hpd)) {
@@ -192,7 +158,7 @@ static int hdmi_probe(struct platform_device *dev)
 		printk("[hdmi] pinctrl_select_state hdmi_hpd err!\n");
 		return ret;
 	}
-	//è®¾ç½®ä¸­æ–­
+	//设置中断
 	of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints));
 	
 	drv_data.gpio          = ints[0];
@@ -204,7 +170,7 @@ static int hdmi_probe(struct platform_device *dev)
 	INIT_WORK(&(drv_data.hdmi_eint_work), hdmi_eint_work_callback);
 	init_waitqueue_head(&drv_data.wait_queue);
 	drv_data.irq = irq_of_parse_and_map(node, 0);
-	//èµ‹å?¼åˆå§‹çŠ¶æ€?
+	//赋值初始状态
 	if (gpio_get_value(drv_data.gpio))
 	{
 		irq_set_irq_type(drv_data.irq, IRQ_TYPE_LEVEL_LOW);
@@ -221,9 +187,9 @@ static int hdmi_probe(struct platform_device *dev)
 	{
 		printk("[hdmi] set EINT finished.\n");
 	}
-	//åˆ›å»ºè°ƒè¯•æ–‡ä»¶
+	//创建调试文件
 	hdmi_sysfs_init(drv_data.k_obj);
-	//æ³¨å†Œè®¾å¤‡
+	//注册设备
 	misc_register(&hdmi_dev);
 		
 	/*INIT the timer to check first status.*/

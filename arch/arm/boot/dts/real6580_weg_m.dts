@@ -423,6 +423,22 @@
 };
 
 &pio {
+	fpga_pwr1pin_on: config0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO20__FUNC_GPIO20>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	
+	fpga_pwr1pin_off: config1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO20__FUNC_GPIO20>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	
 	fpga_pwr2pin_on: config2 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO16__FUNC_GPIO16>;
@@ -507,15 +523,17 @@
 };
 
 &fpga {
-	pinctrl-names = "fpga_pwr2on", "fpga_pwr2off", "lcm_vs_enon", "lcm_vs_enoff", "uart_tx", "uart_rx","hdmi_boost_enon", "hdmi_boost_enoff";
-	pinctrl-0 = <&fpga_pwr2pin_on>;
-	pinctrl-1 = <&fpga_pwr2pin_off>;
-	pinctrl-2 = <&lcm_vs_enpin_on>;
-	pinctrl-3 = <&lcm_vs_enpin_off>;
-	pinctrl-4 = <&uart_tx>;
-	pinctrl-5 = <&uart_rx>;
-	pinctrl-6 = <&hdmi_boost_enpin_on>;
-	pinctrl-7 = <&hdmi_boost_enpin_off>;
+	pinctrl-names = "fpga_pwr1on", "fpga_pwr1off", "fpga_pwr2on", "fpga_pwr2off", "lcm_vs_enon", "lcm_vs_enoff", "uart_tx", "uart_rx","hdmi_boost_enon", "hdmi_boost_enoff";
+	pinctrl-0 = <&fpga_pwr1pin_on>;
+	pinctrl-1 = <&fpga_pwr1pin_off>;
+	pinctrl-2 = <&fpga_pwr2pin_on>;
+	pinctrl-3 = <&fpga_pwr2pin_off>;
+	pinctrl-4 = <&lcm_vs_enpin_on>;
+	pinctrl-5 = <&lcm_vs_enpin_off>;
+	pinctrl-6 = <&uart_tx>;
+	pinctrl-7 = <&uart_rx>;
+	pinctrl-8 = <&hdmi_boost_enpin_on>;
+	pinctrl-9 = <&hdmi_boost_enpin_off>;
 };
 
 &hdmi_hpd {
@@ -534,13 +552,18 @@
 	/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 	headset-four-key-threshold = <0 59 123 195 450>;
 	/* ACCDET GPIO standardization ACC mode use */
-	pinctrl-names = "state_eint_as_int", "speaker_off", "speaker_on";
-	pinctrl-0 = <&ACCDET_pins_eint_as_int>;
-	pinctrl-1 = <&ACCDET_speaker_off>;
-	pinctrl-2 = <&ACCDET_speaker_on>;
+	pinctrl-names = "default", "state_eint_as_int", "ins_led_en_r_output0", "ins_led_en_r_output1", "ins_led_en_r1_output0", "ins_led_en_r1_output1";
+	pinctrl-0 = <&ACCDET_pins_default>;
+	pinctrl-1 = <&ACCDET_pins_eint_as_int>;
+	pinctrl-2 = <&ACCDET_ins_led_en_r_output0>;
+	pinctrl-3 = <&ACCDET_ins_led_en_r_output1>;
+	pinctrl-4 = <&ACCDET_ins_led_en_r1_output0>;
+	pinctrl-5 = <&ACCDET_ins_led_en_r1_output1>;
 	status = "okay";
 };
 &pio {
+	ACCDET_pins_default: eint0default {
+	};
 	ACCDET_pins_eint_as_int: eint@0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO0__FUNC_EINT0>;
@@ -549,16 +572,30 @@
 			//bias-pull-up = <00>;
 		};
 	};
-	ACCDET_speaker_off: speaker_off {
+	ACCDET_ins_led_en_r_output0: insen1output0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO63__FUNC_GPIO63>;
+			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	ACCDET_speaker_on: speaker_on {
+	ACCDET_ins_led_en_r_output1: insen1output1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO63__FUNC_GPIO63>;
+			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	ACCDET_ins_led_en_r1_output0: insen2output0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	ACCDET_ins_led_en_r1_output1: insen2output1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
 			slew-rate = <1>;
 			output-high;
 		};

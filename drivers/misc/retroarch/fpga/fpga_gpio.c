@@ -7,7 +7,7 @@
 #include <linux/kobject.h>
 #include "fpga_gpio.h"
 
-static struct pinctrl_state *fpga_pwr2on, *fpga_pwr2off, 
+static struct pinctrl_state *fpga_pwr1on, *fpga_pwr1off, *fpga_pwr2on, *fpga_pwr2off, 
                             *lcm_vs_enon, *lcm_vs_enoff, *uart_tx, *uart_rx,*hdmi_boost_enon, *hdmi_boost_enoff;
 static struct pinctrl       *fpga_gpio = 0; 
 
@@ -20,6 +20,8 @@ void enable_fpga(int able,int module)
 	{
 		if(module & LCM_VS)
 			pinctrl_select_state(fpga_gpio, lcm_vs_enon);
+		if(module & FPGA_PWR1)
+			pinctrl_select_state(fpga_gpio, fpga_pwr1on);
 		if(module & FPGA_PWR2)
 			pinctrl_select_state(fpga_gpio, fpga_pwr2on);
 		if(module & HDMI_BOOST)
@@ -29,6 +31,8 @@ void enable_fpga(int able,int module)
 	{
 		if(module & LCM_VS)
 			pinctrl_select_state(fpga_gpio, lcm_vs_enoff);
+		if(module & FPGA_PWR1)
+			pinctrl_select_state(fpga_gpio, fpga_pwr1off);
 		if(module & FPGA_PWR2)
 			pinctrl_select_state(fpga_gpio, fpga_pwr2off);
 		if(module & HDMI_BOOST)
@@ -45,6 +49,20 @@ static int fpga_probe(struct platform_device *dev)
 	printk("[fpga] fpga_probe begin!\n");
 	
 	fpga_gpio = devm_pinctrl_get(&dev->dev);
+	
+	fpga_pwr1on = pinctrl_lookup_state(fpga_gpio, "fpga_pwr1on");
+	if (IS_ERR(fpga_pwr1on)) {
+		ret = PTR_ERR(fpga_pwr1on);
+		printk("[fpga] dts can not find fpga_pwr1on!\n");
+		return ret;
+	}
+	
+	fpga_pwr1off = pinctrl_lookup_state(fpga_gpio, "fpga_pwr1off");
+	if (IS_ERR(fpga_pwr1off)) {
+		ret = PTR_ERR(fpga_pwr1off);
+		printk("[fpga] dts can not find fpga_pwr1off!\n");
+		return ret;
+	}
 	
 	fpga_pwr2on = pinctrl_lookup_state(fpga_gpio, "fpga_pwr2on");
 	if (IS_ERR(fpga_pwr2on)) {

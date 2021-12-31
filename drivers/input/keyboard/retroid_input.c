@@ -85,10 +85,10 @@ static void retroid_input_update(void)
 
 	while (retroid_gpios_ptr->pin > 0) {
 		switch (retroid_gpios_ptr->pin) {
-			case BTN_VOLUME_DOWN_VIRTUAL_GPIO_PIN:
+			case BTN_TL2_VIRTUAL_GPIO_PIN:
 				retroid_gpios_ptr->state = retroid_tl2_state;
 				break;
-			case BTN_VOLUME_UP_VIRTUAL_GPIO_PIN:
+			case BTN_TR2_VIRTUAL_GPIO_PIN:
 				retroid_gpios_ptr->state = retroid_tr2_state;
 				break;
 			default:
@@ -159,27 +159,8 @@ static int retroid_input_ioctl(struct file *filp, unsigned int cmd, unsigned lon
 	return 0;
 }
 
-static ssize_t retroid_getinfo_show(struct device *dev,struct device_attribute *attr, char *buf)
-{
-	int count;
-	count = sprintf(buf,"adc channel 1:%d ,channel 12:%d\n",get_adc_vol(1),get_adc_vol(12));
-	return count;
-}
-
-static DEVICE_ATTR(getinfo, 0664, retroid_getinfo_show, NULL);
-
-static struct device_attribute *retroid_attributes[] = {
-	&dev_attr_getinfo,
-	NULL
-};
-
 static int __init retroid_input_init(void)
 {
-	struct device_attribute **attrs = retroid_attributes;
-	struct device_attribute *attr;
-	 struct device * retroid_device;
-	int err;
-	
 	retroid_input_dev = cdev_alloc();
 
 	alloc_chrdev_region(&dev, 0, 1, DEVICE_NAME);
@@ -193,15 +174,8 @@ static int __init retroid_input_init(void)
 	/* create a struct class structure */
 	retroid_input_class = class_create(THIS_MODULE, DEVICE_NAME);
 	/* creates a device and registers it with sysfs */
-	retroid_device = device_create(retroid_input_class, NULL, MKDEV(major, 0), "%s", DEVICE_NAME);
+	device_create(retroid_input_class, NULL, MKDEV(major, 0), "%s", DEVICE_NAME);
 
-	while ((attr = *attrs++)) {
-		err = device_create_file(retroid_device, attr);
-		if (err) {
-			//device_destroy(cockroach_class, cockroachdrv_device->devt);
-			return err;
-		}
-	}
 	return 0;
 }
 

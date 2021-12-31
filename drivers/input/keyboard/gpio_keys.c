@@ -52,14 +52,7 @@ struct gpio_keys_drvdata {
 	struct gpio_button_data data[0];
 };
 
-struct button_record {
-	unsigned int pin;
-	int state;
-};
-
 static int *g_Buttons;
-
-static struct button_record *btns_record;
 
 /*
  * SYSFS interface for enabling/disabling keys and switches:
@@ -349,39 +342,11 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	}
 	input_sync(input);
 	
-	/* update buttons state record */
-	btns_record[button->code].state = !!state;
-	
 	if (bdata->butt >= 0 && state)
 	{
 		input_event(input, type, bdata->butt, 0);
 		input_sync(input);
 	}
-}
-
-static inline void check_buttons_record(struct input_dev *input, unsigned int code, unsigned int pin)
-{
-	extern int retroid_mt_get_gpio_in_base(unsigned int pin);
-
-	/* 有按键被按下才查询 */
-	if (btns_record[code].state) {
-		btns_record[code].state = !!retroid_mt_get_gpio_in_base(pin);
-		if (!btns_record[code].state) {
-			printk("gpio_keys.c: bug recreate, code: %d\n", code);
-			input_event(input, EV_KEY, code, btns_record[code].state);
-			input_sync(input);
-		}
-	}
-}
-
-static void gpio_dpad_keys_report_event(struct gpio_button_data *bdata)
-{
-	struct input_dev *input = bdata->input;
-
-	check_buttons_record(input, BTN_DPAD_UP, 11);
-	check_buttons_record(input, BTN_DPAD_DOWN, 12);
-	check_buttons_record(input, BTN_DPAD_LEFT, 73);
-	check_buttons_record(input, BTN_DPAD_RIGHT, 71);
 }
 
 static void gpio_keys_gpio_work_func(struct work_struct *work)
@@ -390,8 +355,6 @@ static void gpio_keys_gpio_work_func(struct work_struct *work)
 		container_of(work, struct gpio_button_data, work);
 
 	gpio_keys_gpio_report_event(bdata);
-
-	gpio_dpad_keys_report_event(bdata);
 
 	if (bdata->button->wakeup)
 		pm_relax(bdata->input->dev.parent);
@@ -661,11 +624,6 @@ gpio_keys_get_devtree_pdata(struct device *dev)
 	g_Buttons = devm_kzalloc(dev,
 			     nbuttons * sizeof(int),
 				 GFP_KERNEL);
-	
-	btns_record = devm_kzalloc(dev,
-			     nbuttons * sizeof(struct button_record),
-				 GFP_KERNEL);
-	memset(btns_record, 0, nbuttons * sizeof(struct button_record));
 				 
 	if (!g_Buttons)
 		return ERR_PTR(-ENOMEM);
@@ -708,8 +666,6 @@ gpio_keys_get_devtree_pdata(struct device *dev)
 				button->gpio);
 			return ERR_PTR(-EINVAL);
 		}
-
-		//btns_record[button->code].pin = (unsigned int)button->gpio - 0x3a3;
 
 		button->desc = of_get_property(pp, "label", NULL);
 

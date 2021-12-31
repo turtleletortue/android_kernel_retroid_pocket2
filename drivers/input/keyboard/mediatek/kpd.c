@@ -22,11 +22,10 @@
 #include <linux/clk.h>
 
 #define KPD_NAME	"mtk-kpd"
+//#define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
 
 unsigned int retroid_tl2_state = 0;
 unsigned int retroid_tr2_state = 0;
-
-//#define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
 
 void __iomem *kp_base;
 static unsigned int kp_irqnr;
@@ -427,12 +426,13 @@ static void kpd_keymap_handler(unsigned long data)
 				continue;
 			}
 			kpd_aee_handler(linux_keycode, pressed);
-			if(joystick_mode){
+
+			if (joystick_mode) {
 				if (linux_keycode == 115)
 					retroid_tr2_state = pressed;
 				if (linux_keycode == 158)
 					retroid_tl2_state = pressed;
-			}else{
+			} else{
 				input_report_key(kpd_input_dev, linux_keycode, pressed);
 				input_sync(kpd_input_dev);
 				kpd_print("report Linux keycode = %u  pressed:%d\n", linux_keycode,pressed);
@@ -796,9 +796,9 @@ void kpd_get_dts_info(struct device_node *node)
 		  kpd_dts_data.kpd_key_debounce, kpd_dts_data.kpd_sw_pwrkey, kpd_dts_data.kpd_hw_pwrkey,
 		  kpd_dts_data.kpd_hw_rstkey, kpd_dts_data.kpd_sw_rstkey);
 }
-
 static int kpd_pdrv_probe(struct platform_device *pdev)
 {
+
 	int i, r;
 	int err = 0;
 	struct clk *kpd_clk = NULL;

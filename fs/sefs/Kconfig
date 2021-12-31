@@ -1,0 +1,17 @@
+config SEFS_FS
+	tristate "Sefs filesystem layer support"
+	depends on KEYS && CRYPTO
+	select CRYPTO_ECB
+	select CRYPTO_CBC
+	select CRYPTO_MD5
+	help
+	  Sefs filesystem that operates on the VFS layer. 
+
+	  To compile this file system support as a module, choose M here: the
+	  module will be called sefs.
+
+config SEFS_FS_MESSAGING
+	bool "Enable notifications for userspace key wrap/unwrap"
+	depends on SEFS_FS
+	help
+	  Enables the /dev/sefs entry.
