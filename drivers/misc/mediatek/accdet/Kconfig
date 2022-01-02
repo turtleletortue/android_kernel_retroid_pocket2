@@ -6,6 +6,14 @@ config MTK_ACCDET
 	  say Y or M here.
 	  If unsure, say N.
 
+config MTK_ACCDET_POCKET1
+	tristate "MediaTek ACCDET driver for Retroid Pocket 1"
+	---help---
+	  ACCDET driver support for MediaTek SOC
+	  If you want to use MediaTek ACCDET driver,
+	  say Y or M here.
+	  If unsure, say N.
+
 config ACCDET_EINT
 	tristate "MediaTek ACCDET AP EINT"
 	---help---

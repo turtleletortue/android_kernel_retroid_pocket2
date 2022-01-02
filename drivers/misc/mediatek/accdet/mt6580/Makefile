@@ -13,3 +13,4 @@
 
 
 obj-$(CONFIG_MTK_ACCDET) := accdet.o
+obj-$(CONFIG_MTK_ACCDET_POCKET1) := accdet_pocket1.o

@@ -49,7 +49,7 @@ static int fpga_probe(struct platform_device *dev)
 	printk("[fpga] fpga_probe begin!\n");
 	
 	fpga_gpio = devm_pinctrl_get(&dev->dev);
-
+	
 	fpga_pwr1on = pinctrl_lookup_state(fpga_gpio, "fpga_pwr1on");
 	if (IS_ERR(fpga_pwr1on)) {
 		ret = PTR_ERR(fpga_pwr1on);

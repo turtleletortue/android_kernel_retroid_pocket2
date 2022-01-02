@@ -49,6 +49,9 @@ extern void pmu_drv_tool_customization_init(void);
 #ifdef CONFIG_MTK_ACCDET
 extern int accdet_irq_handler(void);
 #endif
+#ifdef CONFIG_MTK_ACCDET_POCKET1
+extern int accdet_irq_handler(void);
+#endif
 extern int batt_init_cust_data(void);
 
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);

@@ -2604,6 +2604,19 @@ void accdet_int_handler(void)
 /* ret=pmic_config_interface(INT_STATUS1,0x1,0x1,2); */
 }
 #endif
+#ifdef CONFIG_MTK_ACCDET_POCKET1
+void accdet_int_handler(void)
+{
+	unsigned int ret = 0;
+
+	PMICLOG("[accdet_int_handler]....\n");
+
+	ret = accdet_irq_handler();
+	if (0 == ret)
+		PMICLOG("[accdet_int_handler] don't finished\n");
+/* ret=pmic_config_interface(INT_STATUS1,0x1,0x1,2); */
+}
+#endif
 
 #ifdef CONFIG_MTK_RTC
 void rtc_int_handler(void)
@@ -2746,6 +2759,9 @@ void PMIC_EINT_SETTING(void)
 #ifdef CONFIG_MTK_ACCDET
 	pmic_register_interrupt_callback(18, accdet_int_handler);
 #endif
+#ifdef CONFIG_MTK_ACCDET_POCKET1
+	pmic_register_interrupt_callback(18, accdet_int_handler);
+#endif
 #ifdef CONFIG_MTK_RTC
 	pmic_register_interrupt_callback(20, rtc_int_handler);
 #endif
@@ -2754,6 +2770,9 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(10, 1, "PMIC");
 	pmic_enable_interrupt(17, 1, "PMIC");
 #ifdef CONFIG_MTK_ACCDET
+	pmic_enable_interrupt(18, 1, "PMIC");
+#endif
+#ifdef CONFIG_MTK_ACCDET_POCKET1
 	pmic_enable_interrupt(18, 1, "PMIC");
 #endif
 	pmic_enable_interrupt(20, 1, "PMIC");

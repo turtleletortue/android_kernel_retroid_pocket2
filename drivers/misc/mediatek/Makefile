@@ -50,6 +50,7 @@ obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_CUSTOM_KERNEL_CHARGEPUMP) += chargepump/
 obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
 obj-$(CONFIG_MTK_ACCDET)	+= accdet/
+obj-$(CONFIG_MTK_ACCDET_POCKET1)	+= accdet/
 obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
 obj-y += irtx/
 obj-$(CONFIG_MTK_IR_LEARNING_SUPPORT) += ir_learning/

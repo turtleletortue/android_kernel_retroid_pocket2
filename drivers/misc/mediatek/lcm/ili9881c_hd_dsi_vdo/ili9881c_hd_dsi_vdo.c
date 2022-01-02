@@ -520,6 +520,8 @@ static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
     memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_RETROARCH_PLATFORM
+
 static void lcm_get_params(LCM_PARAMS *params)
 {
     memset(params, 0, sizeof(LCM_PARAMS));
@@ -585,7 +587,7 @@ static void lcm_resume(void)
 	enable_fpga(0,LCM_VS);
 	mdelay(10);
 	
-	// Power up FPGA, need as least 210ms ¡À10% before Config_Done
+	// Power up FPGA, need as least 210ms 10% before Config_Done
 	enable_fpga(1,FPGA_PWR1);
 	mdelay(10);
 	enable_fpga(1,FPGA_PWR2);
@@ -608,7 +610,7 @@ static void lcm_init(void)
 	enable_fpga(0,LCM_VS);
 	mdelay(10);
 	
-	// Power up FPGA, need as least 210ms ¡À10% before Config_Done
+	// Power up FPGA, need as least 210ms 10% before Config_Done
 	enable_fpga(1,FPGA_PWR1);
 	mdelay(10);
 	enable_fpga(1,FPGA_PWR2);
@@ -624,7 +626,96 @@ static void lcm_init(void)
 	
 	printk("lcm_init\n");
 }
+#endif
+#ifdef CONFIG_RETROARCH_PLATFORM_POCKET1
+static void lcm_get_params(LCM_PARAMS *params)
+{
+    memset(params, 0, sizeof(LCM_PARAMS));
+    params->type   = LCM_TYPE_DSI;
+    params->width  = FRAME_WIDTH;
+    params->height = FRAME_HEIGHT;
+	params->dbi.te_mode 				= LCM_DBI_TE_MODE_VSYNC_ONLY;
+	params->dbi.te_edge_polarity		= LCM_POLARITY_RISING;
+    params->dsi.mode   = SYNC_PULSE_VDO_MODE;//SYNC_EVENT_VDO_MODE; //BURST_VDO_MODE; //SYNC_PULSE_VDO_MODE;
 
+	// DSI
+	/* Command mode setting */
+	params->dsi.LANE_NUM				= LCM_TWO_LANE; //LCM_THREE_LANE;  //LCM_TWO_LANE;
+	//The following defined the fomat for data coming from LCD engine.
+	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
+	params->dsi.data_format.trans_seq   = LCM_DSI_TRANS_SEQ_MSB_FIRST;
+	params->dsi.data_format.padding     = LCM_DSI_PADDING_ON_LSB;
+	params->dsi.data_format.format      = LCM_DSI_FORMAT_RGB888;
+
+	params->dsi.packet_size=256;
+	// Video mode setting           
+	params->dsi.intermediat_buffer_num = 0;
+    
+    params->dsi.PS=LCM_PACKED_PS_24BIT_RGB888;
+    
+	params->dsi.vertical_sync_active				= 8; //8;	//2;
+	params->dsi.vertical_backporch					= 8; //18;	//14;
+	params->dsi.vertical_frontporch					= 8; //20;	//16;
+	params->dsi.vertical_active_line				= FRAME_HEIGHT; 
+
+	params->dsi.horizontal_sync_active				= 16;	//2;
+	params->dsi.horizontal_backporch				= 43;//  
+	params->dsi.horizontal_frontporch				= 43;//100;	//60;	//44;
+	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
+
+	params->dsi.PLL_CLOCK = 230;//250;//200;//230;
+	params->dsi.ssc_disable = 1;
+	params->dsi.ssc_range = 4;
+}
+
+
+//static int lcm_vs_init = 0;
+
+static void lcm_suspend(void)
+{
+	SET_RESET_PIN(0);         // PINMUX_GPIO70__FUNC_LCM_RST
+	mdelay(50);
+	enable_fpga(0,FPGA_PWR2); // PINMUX_GPIO16__FUNC_GPIO16 
+	mdelay(50);
+	enable_fpga(0,FPGA_PWR1); // PINMUX_GPIO20__FUNC_GPIO20 
+	mdelay(50);
+	enable_fpga(0,LCM_VS);    // PINMUX_GPIO74__FUNC_GPIO74
+	enable_fpga(0,HDMI_BOOST);
+	printk("lcm_suspend\n");
+}
+
+static void lcm_resume(void)
+{
+	SET_RESET_PIN(0);
+	enable_fpga(0,LCM_VS);
+	mdelay(20);
+	enable_fpga(1,FPGA_PWR1);
+	mdelay(20);
+	enable_fpga(1,FPGA_PWR2);
+	mdelay(300);
+	SET_RESET_PIN(1);
+	mdelay(50);
+	enable_fpga(1,LCM_VS);
+	enable_fpga(1,HDMI_BOOST);
+	printk("lcm_resume\n");
+}
+
+static void lcm_init(void)
+{
+	SET_RESET_PIN(0);
+	enable_fpga(0,LCM_VS);
+	mdelay(20);
+	enable_fpga(1,FPGA_PWR1);
+	mdelay(20);
+	enable_fpga(1,FPGA_PWR2);
+	mdelay(300);
+	SET_RESET_PIN(1);
+	mdelay(50);
+	enable_fpga(1,LCM_VS);
+	printk("lcm_init\n");
+	//push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
+}
+#endif
 
 LCM_DRIVER ili9881c_hd_dsi_vdo_lcm_drv = 
 {
