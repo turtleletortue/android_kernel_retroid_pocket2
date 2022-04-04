@@ -63,6 +63,7 @@ struct ipv6_devconf {
 		struct in6_addr secret;
 	} stable_secret;
 	__s32		use_oif_addrs_only;
+    __s32		drop_unsolicited_na;
 	void		*sysctl;
 };
 
